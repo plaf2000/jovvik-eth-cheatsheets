@@ -1,0 +1,174 @@
+\documentclass[11pt,landscape,a4paper,fleqn]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[]{babel}
+\usepackage{tikz}
+\usetikzlibrary{shapes,positioning,arrows,fit,calc,graphs,graphs.standard}
+\usepackage{multicol}
+\usepackage{wrapfig}
+\usepackage[top=3mm,bottom=4mm,left=3mm,right=3mm]{geometry}
+\usepackage[framemethod=tikz]{mdframed}
+\usepackage{microtype}
+\usepackage{mathtools}
+\usepackage{ccicons}
+\usepackage{hyperref}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{soul}
+\usepackage{amssymb}
+\usepackage[neveradjust]{paralist}
+\usepackage[shortlabels]{enumitem}
+\usepackage{bbm}
+\usepackage{listings}
+\usepackage{libertine}
+\usepackage[libertine]{newtxmath}
+% \usepackage{ETbb}
+% \usepackage[sc]{mathpazo}
+\usepackage{algpseudocode}
+\usepackage{inconsolata}
+\usepackage{physics}
+
+\providetoggle{showextratext}
+\settoggle{showextratext}{false}
+
+\setlength{\columnsep}{2mm}
+
+\setlist{topsep=0pt, leftmargin=*, noitemsep, topsep=0pt,parsep=0pt,partopsep=0pt}
+
+\newcommand{\extratext}[1]{\iftoggle{showextratext}{#1}{}}
+
+\newcommand*{\tran}{^{\mathsf{T}}} % (DIN) EN ISO 80000-2:2013
+\newcommand{\kl}[2]{D_{\mathrm{KL}}(#1\lVert#2)}
+
+\DeclareMathOperator{\E}{\mathbb{E}}
+
+\setdefaultleftmargin{0.5cm}{}{}{}{}{}
+
+\let\bar\overline
+
+\definecolor{myblue}{cmyk}{1,.72,0,.38}
+\definecolor{myorange}{cmyk}{0,0.5,1,0}
+\definecolor{myorange2}{cmyk}{0,0.8,0.8,0}
+\definecolor{darkgreen}{cmyk}{0.97,0,1,0.57}
+
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+
+%\everymath\expandafter{\the\everymath \color{myblue}}
+%\everydisplay\expandafter{\the\everydisplay \color{myblue}}
+
+\renewcommand{\baselinestretch}{.8}
+\pagestyle{empty}
+
+\global\mdfdefinestyle{header}{%
+linecolor=gray,linewidth=1pt,%
+leftmargin=0mm,rightmargin=0mm,skipbelow=0mm,skipabove=0mm,
+}
+
+\newcommand{\header}{
+\begin{mdframed}[style=header]
+\footnotesize
+\sffamily
+Cheat sheet\\
+Yannick Merkli,~page~\thepage~of~2
+\end{mdframed}
+}
+
+\makeatletter
+\renewcommand{\section}{\@startsection{section}{1}{0mm}%
+                                {0pt}%
+                                {0.5pt}%x
+                                {\color{myorange}\sffamily\small\bfseries}}
+\renewcommand{\subsection}{\@startsection{subsection}{1}{0mm}%
+                                {0pt}%
+                                {0.1pt}%x
+                            	{\color{myorange2}\sffamily\small}}
+
+
+\makeatother
+\setlength{\parindent}{0pt}
+
+\newcommand{\mhl}[1]{\setlength{\fboxsep}{0pt}\colorbox{yellow}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand\iid{\stackrel{\mathclap{\normalfont\mbox{\tiny{iid}}}}{=}}
+\lstset{
+	basicstyle=\small,
+	mathescape
+}
+
+\begin{document}
+	
+% \section*{Disclaimer}
+
+\setlength{\columnseprule}{0.1pt}
+\begin{multicols*}{4}
+    
+\section{Generative modelling}
+
+Learn $p_{\mathrm{model}} \approx p_{\mathrm{data}}$, sample from $p_{\mathrm{model}}$.
+
+\begin{itemize}
+    \item Explicit density:
+    \begin{itemize}[]
+        \item Approximate:
+        \begin{itemize}[]
+            \item Variational: VAE, Diffusion
+            \item \textcolor{gray}{Markov Chain: Boltzmann machine}
+        \end{itemize}
+        \item Tractable:
+        \begin{itemize}[]
+            \item Autoregressive: WaveNet, TCN, LLM, Pixel(C/R)NN
+            \item Normalizing Flows
+        \end{itemize}
+    \end{itemize}
+    \item Implicit density:
+    \begin{itemize}
+        \item Direct: Generative Adversarial Networks
+        \item \textcolor{gray}{MC: Generative Stochastic Networks}
+    \end{itemize}
+\end{itemize}
+
+Autoencoder: $X \textcolor{blue}{\to} Z \textcolor{red}{\to} X$, $\textcolor{red}{g} \circ \textcolor{blue}{f} \approx \mathrm{id}$,
+$f$ and $g$ are NNs. Optimal linear autoencoder is PCA.
+
+Undercomplete: $|Z| < |X|$, else overcomplete.
+Overcomp. is for denoising, inpainting.
+
+Latent space should be continuious and interpolable.
+Autoencoder spaces are neither,
+so they are only good for reconstruction.
+
+\section{Variational AutoEncoder (VAE)}
+
+Sample $z$ from prior $p_\theta(z)$, to decode use conditional $p_\theta(x \mid z)$ defined by a NN.
+
+$\kl{P}{Q} \coloneqq \int_x p(x) \log \frac{p(x)}{q(x)} \dd x$: KL divergence,
+measure similarity of prob. distr.
+
+$\kl{P}{Q} \neq \kl{Q}{P}, \kl{P}{Q} \geq 0$
+
+Likelihood $p_\theta(x) = \int_z p_\theta(x \mid z) p_\theta(z) \dd z$ is hard to maximize,
+let encoder NN define $q_\phi(z \mid x)$,
+\qquad\qquad
+$\log p_\theta(x^{i}) = \textcolor{orange}{\E_z\left[\log p_\theta(x^{i} \mid z)\right]}
+- \textcolor{purple}{\kl{q_\phi(z \mid x^{i})}{p_\theta(z)}} + \textcolor{red}{\kl{q_\phi(z \mid x^{i})}{p_\theta(z \mid x^{i})}}$.
+\textcolor{red}{Red} is intractable, use $\geq 0$ to ignore it;
+\textcolor{orange}{Orange} is reconstruction loss, clusters similar samples;
+\textcolor{purple}{Purple} makes posterior close to prior, adds cont. and interp.
+$\mathrm{\textcolor{orange}{Orange}} - \mathrm{\textcolor{purple}{Purple}}$ is \textbf{ELBO}, maximize it.
+
+$x \xrightarrow{\mathrm{\makebox[0pt]{\scriptsize \textcolor{blue}{enc}}}} \mu_{z \mid x}, \Sigma_{z \mid x} \xrightarrow{\mathrm{sample}} z \xrightarrow{\mathrm{\makebox[0pt]{\scriptsize \textcolor{red}{dec}}}} \mu_{x \mid z}, \Sigma_{x \mid z}  \xrightarrow{\mathrm{sample}} \hat{x}$
+
+Backprop through sample by reparametr.: $z = \mu + \sigma \epsilon$.
+For inference, use $\mu$ directly.
+
+Disentanglement: features should correspond to distinct factors of variation.
+Can be done with semi-supervised learning by making $z$ conditionally independent of given features $y$.
+
+\subsection{$\beta$-VAE}
+
+Disentangle by
+$\max_{\theta, \phi} \E_x\left[\E_{z \sim q_\phi} \log p_\theta(x \mid z)\right]$ s.t.
+$\kl{q_\phi(z \mid x)}{p_\theta(z)} < \delta$, with KKT: $\max \textcolor{orange}{\mathrm{Orange}} - \beta\textcolor{purple}{\mathrm{Purple}}$.
+
+\end{multicols*}
+\end{document}
