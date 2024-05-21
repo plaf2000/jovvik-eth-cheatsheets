@@ -1,6 +1,6 @@
 \documentclass[11pt,landscape,a4paper,fleqn]{article}
 \usepackage[utf8]{inputenc}
-\usepackage[]{babel}
+\usepackage[british]{babel}
 \usepackage{tikz}
 \usetikzlibrary{shapes,positioning,arrows,fit,calc,graphs,graphs.standard}
 \usepackage{multicol}
@@ -26,6 +26,7 @@
 \usepackage{algpseudocode}
 \usepackage{inconsolata}
 \usepackage{physics}
+\usepackage{bm}
 
 \providetoggle{showextratext}
 \settoggle{showextratext}{false}
@@ -40,6 +41,8 @@
 \newcommand{\kl}[2]{D_{\mathrm{KL}}(#1\lVert#2)}
 
 \DeclareMathOperator{\E}{\mathbb{E}}
+\DeclareMathOperator{\softmax}{\mathrm{Softmax}}
+\newcommand{\R}{\mathbb{R}}
 
 \setdefaultleftmargin{0.5cm}{}{}{}{}{}
 
@@ -95,6 +98,62 @@ Yannick Merkli,~page~\thepage~of~2
 	mathescape
 }
 
+\def\myvector#1{\mathbf{#1}}
+\def\va{{\myvector{a}}}
+\def\vb{{\myvector{b}}}
+\def\vc{{\myvector{c}}}
+\def\vd{{\myvector{d}}}
+\def\ve{{\myvector{e}}}
+\def\vf{{\myvector{f}}}
+\def\vg{{\myvector{g}}}
+\def\vh{{\myvector{h}}}
+\def\vi{{\myvector{i}}}
+\def\vj{{\myvector{j}}}
+\def\vk{{\myvector{k}}}
+\def\vl{{\myvector{l}}}
+\def\vm{{\myvector{m}}}
+\def\vn{{\myvector{n}}}
+\def\vo{{\myvector{o}}}
+\def\vp{{\myvector{p}}}
+\def\vq{{\myvector{q}}}
+\def\vr{{\myvector{r}}}
+\def\vs{{\myvector{s}}}
+\def\vt{{\myvector{t}}}
+\def\vu{{\myvector{u}}}
+\def\vv{{\myvector{v}}}
+\def\vw{{\myvector{w}}}
+\def\vx{{\myvector{x}}}
+\def\vy{{\myvector{y}}}
+\def\vz{{\myvector{z}}}
+
+\def\mymatrix#1{\mathbf{#1}}
+\def\mA{{\mymatrix{A}}}
+\def\mB{{\mymatrix{B}}}
+\def\mC{{\mymatrix{C}}}
+\def\mD{{\mymatrix{D}}}
+\def\mE{{\mymatrix{E}}}
+\def\mF{{\mymatrix{F}}}
+\def\mG{{\mymatrix{G}}}
+\def\mH{{\mymatrix{H}}}
+\def\mI{{\mymatrix{I}}}
+\def\mJ{{\mymatrix{J}}}
+\def\mK{{\mymatrix{K}}}
+\def\mL{{\mymatrix{L}}}
+\def\mM{{\mymatrix{M}}}
+\def\mN{{\mymatrix{N}}}
+\def\mO{{\mymatrix{O}}}
+\def\mP{{\mymatrix{P}}}
+\def\mQ{{\mymatrix{Q}}}
+\def\mR{{\mymatrix{R}}}
+\def\mS{{\mymatrix{S}}}
+\def\mT{{\mymatrix{T}}}
+\def\mU{{\mymatrix{U}}}
+\def\mV{{\mymatrix{V}}}
+\def\mW{{\mymatrix{W}}}
+\def\mX{{\mymatrix{X}}}
+\def\mY{{\mymatrix{Y}}}
+\def\mZ{{\mymatrix{Z}}}
+
 \begin{document}
 	
 % \section*{Disclaimer}
@@ -146,9 +205,8 @@ measure similarity of prob. distr.
 
 $\kl{P}{Q} \neq \kl{Q}{P}, \kl{P}{Q} \geq 0$
 
-Likelihood $p_\theta(x) = \int_z p_\theta(x \mid z) p_\theta(z) \dd z$ is hard to maximize,
-let encoder NN define $q_\phi(z \mid x)$,
-\qquad\qquad
+Likelihood $p_\theta(x) = \int_z p_\theta(x \mid z) p_\theta(z) \dd z$ is hard to max.,
+let enc. NN be $q_\phi(z \mid x)$,
 $\log p_\theta(x^{i}) = \textcolor{orange}{\E_z\left[\log p_\theta(x^{i} \mid z)\right]}
 - \textcolor{purple}{\kl{q_\phi(z \mid x^{i})}{p_\theta(z)}} + \textcolor{red}{\kl{q_\phi(z \mid x^{i})}{p_\theta(z \mid x^{i})}}$.
 \textcolor{red}{Red} is intractable, use $\geq 0$ to ignore it;
@@ -169,6 +227,63 @@ Can be done with semi-supervised learning by making $z$ conditionally independen
 Disentangle by
 $\max_{\theta, \phi} \E_x\left[\E_{z \sim q_\phi} \log p_\theta(x \mid z)\right]$ s.t.
 $\kl{q_\phi(z \mid x)}{p_\theta(z)} < \delta$, with KKT: $\max \textcolor{orange}{\mathrm{Orange}} - \beta\textcolor{purple}{\mathrm{Purple}}$.
+
+\section{Autoregressive generative models}
+
+Autoregression: use data from the same input variable at previous time steps
+
+Discriminative: $P(Y \mid X)$, generative: $P(X, Y)$, maybe with $Y$ missing.
+Sequence models are generative: from $x_i \dots x_{i + k}$ predict $x_{i + k + 1}$.
+
+Tabular approach: $p(\vx) = \prod_i p(x_i \mid \vx_{<i})$, needs $2^{i - 1}$ params.
+Independence assumption is too strong.
+Let $p_{\theta_i}(x_i \mid \vx_{ < i}) = \operatorname{Bern}(f_i(\vx_{ < i}))$,
+where $f_i$ is a NN.
+\textbf{Fully Visible Sigmoid Belief Networks}: $f_i = \sigma(\alpha^{(i)}_0 + \bm{\alpha}^{(i)} \vx_{ < i}\tran)$,
+complexity $n^2$, but model is linear.
+
+\textbf{Neural Autoregressive Density Estimator}: add hidden layer.
+$\vh_i = \sigma(\vb + \mW_{\centerdot, < i} \vx_{ < i})$,
+$\hat{x}_i = \sigma(c_i + \mV_{i,\centerdot} \vh_i)$.
+Order of $\vx$ can be arbitrary but fixed.
+Train by max log-likelihood in $\mathcal{O}(TD)$, can use 2nd order optimizers,
+can use \textbf{teacher forcing}: feed GT as previous output.
+
+Extensions: Convolutional; Real-valued: conditionals by mixture of gaussians;
+Order-less and deep: one DNN predicts $p(x_k \mid x_{i_1} \dots x_{i_j})$.
+
+\textbf{Masked Autoencoder Distribution Estimator}:
+mask out weights s.t. no information flows from $x_d \dots $ to $\hat{x}_d$.
+Large hidden layers needed.
+Trains as fast as autoencoders, but sampling needs $D$ forward passes.
+
+\textbf{PixelRNN}: generate pixels from corner, dependency on previous pixels is by RNN (LSTM).
+\textbf{PixelCNN}: also from corner, but condition by CNN over context region (receptive field) $ \Rightarrow $ parallelize.
+For conditionals use \textul{masked} convolutions.
+Channels: model R from context, G from R + cont., B from G + R + cont.
+Training is parallel, but inference is sequential $ \Rightarrow $ slow.
+Use conv. stacks to mask correctly.
+
+NLL is a natural metric for autoreg. models,
+hard to evaluate others.
+
+\textbf{WaveNet}: audio is high-dimensional.
+Use dilated convolutions to increase receptive field with multiple layers.
+
+AR does not work for high res images/video, convert the images into a series of tokens with an AE:
+Vector-quantized VAE.
+The codebook is a set of vectors.
+$x \xrightarrow{\mathrm{\makebox[0pt]{\scriptsize \textcolor{blue}{enc}}}} z \xrightarrow{\mathrm{codebook}} z_q \xrightarrow{\mathrm{\makebox[0pt]{\scriptsize \textcolor{red}{dec}}}} \hat{x}$.
+
+We can run an AR model in the latent space.
+
+\subsection{Attention}
+
+$\vx_t$ is a convex combination of the past steps, with access to all past steps.
+For $X \in \R^{T \times D}$: 
+$K = XW_K, V = XW_V, Q = XW_Q$.
+Check pairwise similarity between query and keys via dot product:
+let attention weights be $\bm{\alpha} = \softmax(QK\tran / \sqrt{D})$, $\bm{\alpha} \in \R^{1 \times T}$.
 
 \end{multicols*}
 \end{document}
