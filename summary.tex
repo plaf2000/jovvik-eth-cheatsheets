@@ -27,6 +27,8 @@
 \usepackage{inconsolata}
 \usepackage{physics}
 \usepackage{bm}
+\usepackage{svg}
+\usepackage{wrapfig}
 
 \providetoggle{showextratext}
 \settoggle{showextratext}{false}
@@ -42,7 +44,9 @@
 
 \DeclareMathOperator{\E}{\mathbb{E}}
 \DeclareMathOperator{\softmax}{\mathrm{Softmax}}
+\DeclareMathOperator{\diag}{\mathrm{diag}}
 \newcommand{\R}{\mathbb{R}}
+\renewcommand{\exp}{\mathrm{exp}}
 
 \setdefaultleftmargin{0.5cm}{}{}{}{}{}
 
@@ -323,11 +327,51 @@ To do this, add a coupling layer:
     h' & h'\beta' \\
     0 & 1
 \end{pmatrix}\]
-Stack these for expressivity, $f = f_k \circ \dots f_1$
+Stack these for expressivity, $f = f_k \circ \dots f_1$.
 $p_x(x) = p_z(f^{-1}(x)) \prod_k \abs{\det \pdv{f_k^{-1}(x)}{x}}$.
 
 Sample $z \sim p_z$ and get $x = f(z)$.
-To get the prob. of $x$, use the formula above.
+
+\includesvg[width=\linewidth]{figures/flow.svg}
+
+\begin{wrapfigure}{R}{0.2\linewidth}
+    \includesvg[width=\linewidth]{figures/flow-block.svg}
+\end{wrapfigure}
+\textbullet\ Squeeze: reshape, increase chan.
+
+\textbullet\ ActNorm: batchnorm with init. s.t. output $\sim \mathcal{N}(0, \mI)$.
+    $\vy_{i,j} = \vs \odot \vx_{i,j} + \vb$,
+    $\vx_{i, j} = (\vy_{i,j} - \vb) / \vs$,
+    $\log\det = H \cdot W \cdot \sum_i \log \abs{\vs_i}$: linear.
+
+\textbullet\ $1 \times 1$ conv: permutation along channel dim.
+    Init $\mW$ as rand. ortogonal $\in \R^{C \times C}$ with $\det\mW = 1$.
+    $\log\det = H \cdot W \cdot \log\abs{\det\mW}$: $\mathcal{O}(C^3)$.
+    Faster: $\mW \coloneqq \mP \mL(\mU + \diag(s))$,
+    where $\mP$ is a random \underline{fixed} permut. matrix,
+    $\mL$ is lower triang. with 1s on diag.,
+    $\mU$ is upper triang. with 0s on diag.,
+    $\vs$ is a vector.
+    Then $\log\det = \sum_i \log \abs{\vs_i}$: $\mathcal{O}(C)$
+Conditional coupling: add parameter $\vw$ to $\beta$.
+
+\textbf{SRFlow}: use flows to generate many high-res images from a low-res one.
+Adds affine injector between conv. and coupling layers.
+$\vh^{n+1} = \exp(\beta^n_{\theta, s}(\vu)) \cdot \vh^n + \beta_{\theta, b}(\vu)$,
+$\vh^n = \exp( - \beta^n_{\theta, s}(\vu)) \cdot (\vh^{n+1} - \beta^n_{\theta, b}(\vu))$,
+$\log\det = \sum_{i,j,k} \beta^n_{\theta, s}(\vu_{i, j, k})$.
+
+\textbf{StyleFlow}: Take StyleGAN and replace the network $\vz \to \vw$ (aux. latent space)
+with a normalizing flow conditioned on attributes.
+
+\textbf{C-Flow}: condition on other normalizing flows: multimodal flows.
+Encode original image $\vx_B^1$: $\vz_B^1 = f^{-1}_\phi(\vx_B^1 \mid \vx_A^1)$;
+encode extra info (image, segm. map, etc.) $\vx_A^2$: $\vz_A^2 = g^{-1}_\theta(\vx_A^2)$;
+generate new image $\vx_B^2$: $\vx_B^2 = f_\phi(\vz_B^1 \mid \vz_A^2)$.
+
+Flows are expensive for training and low res.
+The latent distr. of a flow needn't be $\mathcal{N}$.
 
 \end{multicols*}
+
 \end{document}
