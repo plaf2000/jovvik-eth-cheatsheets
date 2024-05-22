@@ -290,5 +290,44 @@ Multi-head attn. splits $W$ into $h$ heads, then concatenates them.
 Positional encoding injects information about the position of the token.
 Attn. is $\mathcal{O}(T^2 D)$.
 
+\section{Normalizing Flows}
+
+VAs dont have a tractable likelihood, AR models have no latent space.
+Want both.
+Change of variable for $x = f(z)$:
+$p_x(x) = p_z(f^{-1}(x)) \abs{\det \pdv{f^{-1}(x)}{x}} = p_z(f^{-1}(x)) \abs{\det \pdv{f(z)}{z}}^{-1}$.
+Map $Z \to X$ with a deterministic invertible $f_\theta$.
+This can be a NN, but computing the determinant is $\mathcal{O}(n^3)$.
+If the Jacobian is triangular, the determinant is $\mathcal{O}(n)$.
+To do this, add a coupling layer:
+\begin{minipage}{0.5\linewidth}
+    \[\begin{pmatrix}
+        y^A \\
+        y^B
+    \end{pmatrix} = \begin{pmatrix}
+        h(x^A, \beta(x^B)) \\
+        x^B
+    \end{pmatrix}\]
+\end{minipage}%
+\hspace{0.3cm}%
+\begin{minipage}{0.45\linewidth}
+    , where $\beta$ is any model, and $h$ is elementwise.
+\end{minipage}
+\[\begin{pmatrix}
+    x^A \\
+    x^B
+\end{pmatrix} = \begin{pmatrix}
+    h^{-1}(y^A, \beta(y^B)) \\
+    y^B
+\end{pmatrix}, J = \begin{pmatrix}
+    h' & h'\beta' \\
+    0 & 1
+\end{pmatrix}\]
+Stack these for expressivity, $f = f_k \circ \dots f_1$
+$p_x(x) = p_z(f^{-1}(x)) \prod_k \abs{\det \pdv{f_k^{-1}(x)}{x}}$.
+
+Sample $z \sim p_z$ and get $x = f(z)$.
+To get the prob. of $x$, use the formula above.
+
 \end{multicols*}
 \end{document}
