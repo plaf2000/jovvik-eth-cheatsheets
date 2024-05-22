@@ -258,7 +258,7 @@ Large hidden layers needed.
 Trains as fast as autoencoders, but sampling needs $D$ forward passes.
 
 \textbf{PixelRNN}: generate pixels from corner, dependency on previous pixels is by RNN (LSTM).
-\textbf{PixelCNN}: also from corner, but condition by CNN over context region (receptive field) $ \Rightarrow $ parallelize.
+\textbf{PixelCNN}: also from corner, but condition by CNN over context region (perceptive field) $ \Rightarrow $ parallelize.
 For conditionals use \textul{masked} convolutions.
 Channels: model R from context, G from R + cont., B from G + R + cont.
 Training is parallel, but inference is sequential $ \Rightarrow $ slow.
@@ -268,7 +268,7 @@ NLL is a natural metric for autoreg. models,
 hard to evaluate others.
 
 \textbf{WaveNet}: audio is high-dimensional.
-Use dilated convolutions to increase receptive field with multiple layers.
+Use dilated convolutions to increase perceptive field with multiple layers.
 
 AR does not work for high res images/video, convert the images into a series of tokens with an AE:
 Vector-quantized VAE.
@@ -284,6 +284,11 @@ For $X \in \R^{T \times D}$:
 $K = XW_K, V = XW_V, Q = XW_Q$.
 Check pairwise similarity between query and keys via dot product:
 let attention weights be $\bm{\alpha} = \softmax(QK\tran / \sqrt{D})$, $\bm{\alpha} \in \R^{1 \times T}$.
+Adding mask $M$ to avoid looking into the future:
+\[X = \softmax\left(\frac{(XW_Q)(XW_K)\tran}{\sqrt{D}} + M\right)(XW_V)\]
+Multi-head attn. splits $W$ into $h$ heads, then concatenates them.
+Positional encoding injects information about the position of the token.
+Attn. is $\mathcal{O}(T^2 D)$.
 
 \end{multicols*}
 \end{document}
