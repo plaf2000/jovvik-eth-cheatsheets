@@ -41,6 +41,7 @@
 
 \newcommand*{\tran}{^{\mathsf{T}}} % (DIN) EN ISO 80000-2:2013
 \newcommand{\kl}[2]{D_{\mathrm{KL}}(#1\lVert#2)}
+\newcommand{\js}[2]{D_{\mathrm{JS}}(#1\lVert#2)}
 
 \DeclareMathOperator{\E}{\mathbb{E}}
 \DeclareMathOperator{\softmax}{\mathrm{Softmax}}
@@ -371,6 +372,44 @@ generate new image $\vx_B^2$: $\vx_B^2 = f_\phi(\vz_B^1 \mid \vz_A^2)$.
 
 Flows are expensive for training and low res.
 The latent distr. of a flow needn't be $\mathcal{N}$.
+
+\section{Generative Adversarial Networks (GANs)}
+
+Log-likelihood is not a good metric. We can have high likelihood with poor quality by mixing in noise and not losing much likelihood; or low likelihood with good quality by remembering input data and having sharp peaks there.
+
+\textbf{Generator} $G : \R^Q \to \R^D$ maps noise $z$ to data,
+\textbf{discriminator} $D : \R^D \to [0, 1]$ tries to decide if data is real or fake,
+receiving both gen. outputs and training data.
+Train $D$ for $k$ steps for each step of $G$.
+
+Training GANs is a min-max process, which are hard to optimize.
+$V(G, D) = \E_{\vx \sim p_{\mathrm{d}}} \log(D(\vx)) + \E_{\hat{\vx} \sim p_{\mathrm{m}}} \log(1 - D(\hat{\vx}))$
+
+For $G$ the opt. $D^* = p_{\mathrm{d}}(\vx) / (p_{\mathrm{d}}(\vx) + p_{\mathrm{m}}(\vx))$.
+
+Jensen-Shannon divergence (symmetric):
+$\js{p}{q} = \frac{1}{2} \kl{p}{\frac{p + q}{2}} + \frac{1}{2} \kl{p}{\frac{p + q}{2}}$.
+Global minimum of $\js{p_{\mathrm{d}}}{p_{\mathrm{m}}}$ is the glob. min. of $V(G, D)$
+and $V(G, D^*) = - \log(4)$.
+
+If $G$ and $D$ have enough capacity, at each update step $D$ reaches $D^*$
+and $p_{\mathrm{m}}$ improves $V(p_{\mathrm{m}}, D^*) \propto \sup_D \int_{\vx} p_{\mathrm{m}}(\vx) \log( - D(\vx)) \dd \vx$,
+then $p_{\mathrm{m}} \to p_{\mathrm{d}}$ by convexity of $V(p_{\mathrm{m}}, D^*)$ wrt. $p_{\mathrm{m}}$.
+These assumptions are too strong.
+
+If $D$ is too strong, $G$ has near zero gradients and doesn't learn ($\log'(1 - D(G(z))) \approx 0$).
+Use gradient \underline{ascent} on $\log(D(G(z)))$ instead.
+
+Model collapse: $G$ only produces one sample or one class of samples.
+Solution: \textbf{unrolling} --- use $k$ previous $D$ for each $G$ update.
+
+DCGAN: pool $\to$ strided convolution, batchnorm, no FC, ReLU for $G$, LeakyReLU for $D$.
+
+Wasserstein GAN: different loss, gradients don't vanish.
+Adding gradient penalty for $D$ stabilizes training.
+Hierarchical GAN: generate low-res image, then high-res during training.
+StyleGAN: learn intermediate latent space $\mathcal{W}$ with FCs,
+batchnorm with scale and mean from $\mathcal{W}$, add noise at each layer.
 
 \end{multicols*}
 
