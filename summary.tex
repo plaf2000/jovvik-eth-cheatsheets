@@ -43,11 +43,13 @@
 \newcommand{\kl}[2]{D_{\mathrm{KL}}(#1\lVert#2)}
 \newcommand{\js}[2]{D_{\mathrm{JS}}(#1\lVert#2)}
 
-\DeclareMathOperator{\E}{\mathbb{E}}
+\newcommand{\E}{\mathbb{E}}
 \DeclareMathOperator{\softmax}{\mathrm{Softmax}}
 \DeclareMathOperator{\diag}{\mathrm{diag}}
 \newcommand{\R}{\mathbb{R}}
 \renewcommand{\exp}{\mathrm{exp}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
 
 \setdefaultleftmargin{0.5cm}{}{}{}{}{}
 
@@ -439,12 +441,76 @@ Needs pairs for training.
 
 CycleGAN: unpaired.
 Two GANs $F: X \to Y, G : Y \to X$,
-cycle-consistency loss $F \circ G \approx \mathrm{id}; G \circ F \approx \mathrm{id}$
+cycle--consistency loss $F \circ G \approx \mathrm{id}; G \circ F \approx \mathrm{id}$
 plus GAN losses for $F$ and $G$.
 
 BicycleGAN: add noise input.
 
 Vid2vid: video translation.
+
+\section{Diffusion models}
+
+High quality generations, better diversity, more stable/scalable.
+
+Diffusion (forward) step $q$: adds noise to $\vx_t$ (not learned).
+Denoising (reverse) step $p_\theta$: removes noise from $\vx_t$ (learned).
+
+$q(\vx_t \mid \vx_{t-1}) = \mathcal{N}(\sqrt{1 - \beta} \vx_{t-1}, \beta_t \mI)$
+
+$p_\theta(\vx_{t-1} \mid \vx_t) = \mathcal{N}(\mu_\theta(\vx_t, t), \sigma_t^2 \mI)$
+
+$\beta_t$ is the variance schedule (monotone $\uparrow$).
+Let $\alpha_t \coloneqq 1 - \beta_t, \overline{\alpha}_t \coloneqq \prod \alpha_i$,
+then $q(\vx_t \mid \vx_0) = \mathcal{N}(\sqrt{\overline{\alpha}_t} \vx_0, (1 - \overline{\alpha}_t)\mI)
+\Rightarrow \vx_t = \sqrt{\overline{\alpha}_t} \vx_0 + \sqrt{1 - \overline{\alpha}_t}\epsilon$.
+
+Denoising is not tractable naively:
+$q(\vx_{t-1} \mid \vx_t) = q(\vx_t \mid \vx_{t-1}) q(\vx_{t-1}) / q(\vx_t)$,
+$q(\vx_t) = \int q(\vx_t \mid \vx_0) q(\vx_0) \dd \vx_0$.
+
+Conditioning on $\vx_0$ we get a Gaussian.
+Learn model $p_\theta(\vx_{t-1} \mid \vx_t) \approx q(\vx_{t-1} \mid \vx_t, \vx_0)$
+by predicting the mean.
+
+$\log p(\vx_0) \geq \E_{q(\vx_{1:T} \mid \vx_0)} \log(p(\vx_{0:T}) / q(\vx_{1:T} \mid \vx_0)) =
+\textcolor{orange}{\E_{q(\vx_1 \mid \vx_0)}\log p_\theta(\vx_0 \mid \vx_1)} -
+\textcolor{purple}{\kl{q(\vx_T \mid \vx_0)}{p(\vx_T)}} -
+\textcolor{blue}{\sum_{t = 2}^T \E_{q(\vx_t \mid \vx_0)} \kl{q(\vx_{t-1} \mid \vx_t, \vx_0)}{p_\theta(\vx_{t-1} \mid \vx_t)}}$,
+where \textcolor{orange}{orange} and \textcolor{purple}{purple} are the same as in VAEs,
+and \textcolor{blue}{blue} are the extra loss functions.
+In a sense VAEs are 1-step diffusion models.
+
+$t$-th denoising is just $\argmin_\theta \frac{1}{2 \sigma_q^2(t)} \norm{\mu_\theta - \mu_q}_2^2$,
+so we want $\mu_\theta(\vx_t, t) \approx \mu_q(\vx_t, \vx_0)$.
+$\mu_q(\vx_t, \vx_0)$ can be written as
+$\frac{1}{\sqrt{\alpha_t}} \vx_t - \frac{1 - \alpha_t}{\sqrt{1 - \overline{\alpha}_t} \sqrt{\alpha_t}} \epsilon_0$,
+and $\mu_\theta(\vx_t, t) = \frac{1}{\sqrt{\alpha_t}} \vx_t - \frac{1 - \alpha_t}{\sqrt{1 - \overline{\alpha}_t} \sqrt{\alpha_t}} \hat{\epsilon}_\theta(\vx_t, t)$,
+so the NN learns to predict the added noise.
+
+Training: img $\vx_0, t \sim \mathrm{Unif}(1... T), \epsilon \sim \mathcal{N}(0, \mI)$,
+GD on $\nabla_\theta\norm{\epsilon - \epsilon_\theta(\sqrt{\overline{\alpha}_t}\vx_0 + \sqrt{1 - \overline{\alpha}_t}\epsilon, t)}^2$.
+
+Sampling: $\vx_T \sim \mathcal{N}(0, \mI)$, for $t = T$ downto $1$:
+$\vz \sim \mathcal{N}(0, I)$ if $t > 1$ else $\vz = 0$;
+
+$\vx_{t-1} = \frac{1}{\sqrt{\alpha_t}}(\vx_t - \frac{1 - \alpha_t}{\sqrt{1 - \overline{\alpha}_t}} \epsilon_\theta(\vx_t, t)) + \sigma_t \vz$.
+
+$\sigma_t^2 = \beta_t$ in practice.
+$t$ can be continuious.
+
+\subsection{Conditional generation}
+
+Add input $y$ to the model.
+
+\textbf{ControlNet}: don't retrain model, add layers that add something to block outputs.
+
+\textbf{Guidance}: mix predictions of a conditional and unconditional model,
+because conditional models are not diverse.
+
+\subsection{Latent diffusion models}
+
+High-res images are expensive to model.
+Predict in latent space, decode with a decoder.
 
 \end{multicols*}
 
