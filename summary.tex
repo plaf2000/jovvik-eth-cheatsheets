@@ -411,6 +411,41 @@ Hierarchical GAN: generate low-res image, then high-res during training.
 StyleGAN: learn intermediate latent space $\mathcal{W}$ with FCs,
 batchnorm with scale and mean from $\mathcal{W}$, add noise at each layer.
 
+GAN \textbf{inversion}: find $z$ s.t. $G(z) \approx x$ $ \Rightarrow $ manipulate images in latent space, inpainting.
+If $G$ predicts image and segmentation mask,
+we can use inversion to predict mask for any image, even outside the training distribution.
+
+\subsection{3D GANs}
+
+3D GAN: voxels instead of pixels.
+PlatonicGAN: 2D input, 3D output differentiably rendered back to 2D for $D$.
+
+HoloGAN: 3D GAN + 2D superresolution GAN
+
+GRAF: radiance fields more effic. than voxels
+
+GIRAFFE: GRAF + 2D conv. upscale
+
+EG3D: use 3 2D images from StyleGAN for features, project each 3D point to tri-planes.
+
+\subsection{Image Translation}
+
+E.g. sketch $X \to$ image $Y$.
+Pix2Pix:
+$G : X \to Y$,
+$D : X, Y \to [0, 1]$.
+GAN loss $+ L_1$ loss between sketch and image.
+Needs pairs for training.
+
+CycleGAN: unpaired.
+Two GANs $F: X \to Y, G : Y \to X$,
+cycle-consistency loss $F \circ G \approx \mathrm{id}; G \circ F \approx \mathrm{id}$
+plus GAN losses for $F$ and $G$.
+
+BicycleGAN: add noise input.
+
+Vid2vid: video translation.
+
 \end{multicols*}
 
 \end{document}
