@@ -29,6 +29,7 @@
 \usepackage{bm}
 \usepackage{svg}
 \usepackage{wrapfig}
+\usepackage{titlesec}
 
 \providetoggle{showextratext}
 \settoggle{showextratext}{false}
@@ -50,6 +51,8 @@
 \renewcommand{\exp}{\mathrm{exp}}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\sep}{\,\textcolor{red}{\bm|}\,}
 
 \setdefaultleftmargin{0.5cm}{}{}{}{}{}
 
@@ -83,18 +86,18 @@ Yannick Merkli,~page~\thepage~of~2
 \end{mdframed}
 }
 
-\makeatletter
-\renewcommand{\section}{\@startsection{section}{1}{0mm}%
-                                {0pt}%
-                                {0.5pt}%x
-                                {\color{myorange}\sffamily\small\bfseries}}
-\renewcommand{\subsection}{\@startsection{subsection}{1}{0mm}%
-                                {0pt}%
-                                {0.1pt}%x
-                            	{\color{myorange2}\sffamily\small}}
+% \makeatletter
+% \renewcommand{\section}{\@startsection{section}{1}{0mm}%
+%                                 {0pt}%
+%                                 {0.5pt}%x
+%                                 {\color{myorange}\sffamily\small\bfseries}}
+% \renewcommand{\subsection}{\@startsection{subsection}{1}{\z@}%
+%                                 {0pt}%
+%                                 {0.1pt}%x
+%                             	{\color{myorange2}\sffamily\small}}
 
 
-\makeatother
+% \makeatother
 \setlength{\parindent}{0pt}
 
 \newcommand{\mhl}[1]{\setlength{\fboxsep}{0pt}\colorbox{yellow}{#1}}
@@ -160,6 +163,14 @@ Yannick Merkli,~page~\thepage~of~2
 \def\mX{{\mymatrix{X}}}
 \def\mY{{\mymatrix{Y}}}
 \def\mZ{{\mymatrix{Z}}}
+
+\titleformat{\section}{\color{myorange}\sffamily\normalsize}{\thesection}{0.5em}{}
+\titleformat{\subsection}[runin]{\color{myorange2}\sffamily\small}{\thesubsection}{0.5em}{}
+
+\titlespacing*{\section}
+{0pt}{0em}{0em}
+\titlespacing*{\subsection}
+{0pt}{0em}{1em}
 
 \begin{document}
 	
@@ -231,8 +242,8 @@ Can be done with semi-supervised learning by making $z$ conditionally independen
 
 \subsection{$\beta$-VAE}
 
-Disentangle by
-$\max_{\theta, \phi} \E_x\left[\E_{z \sim q_\phi} \log p_\theta(x \mid z)\right]$ s.t.
+$\max_{\theta, \phi} \E_x\left[\E_{z \sim q_\phi} \log p_\theta(x \mid z)\right]$
+to disentangle s.t.
 $\kl{q_\phi(z \mid x)}{p_\theta(z)} < \delta$, with KKT: $\max \textcolor{orange}{\mathrm{Orange}} - \beta\textcolor{purple}{\mathrm{Purple}}$.
 
 \section{Autoregressive generative models}
@@ -266,7 +277,7 @@ Trains as fast as autoencoders, but sampling needs $D$ forward passes.
 
 \textbf{PixelRNN}: generate pixels from corner, dependency on previous pixels is by RNN (LSTM).
 \textbf{PixelCNN}: also from corner, but condition by CNN over context region (perceptive field) $ \Rightarrow $ parallelize.
-For conditionals use \textul{masked} convolutions.
+For conditionals use masked convolutions.
 Channels: model R from context, G from R + cont., B from G + R + cont.
 Training is parallel, but inference is sequential $ \Rightarrow $ slow.
 Use conv. stacks to mask correctly.
@@ -472,10 +483,10 @@ Conditioning on $\vx_0$ we get a Gaussian.
 Learn model $p_\theta(\vx_{t-1} \mid \vx_t) \approx q(\vx_{t-1} \mid \vx_t, \vx_0)$
 by predicting the mean.
 
-$\log p(\vx_0) \geq \E_{q(\vx_{1:T} \mid \vx_0)} \log(p(\vx_{0:T}) / q(\vx_{1:T} \mid \vx_0)) =
-\textcolor{orange}{\E_{q(\vx_1 \mid \vx_0)}\log p_\theta(\vx_0 \mid \vx_1)} -
-\textcolor{purple}{\kl{q(\vx_T \mid \vx_0)}{p(\vx_T)}} -
-\textcolor{blue}{\sum_{t = 2}^T \E_{q(\vx_t \mid \vx_0)} \kl{q(\vx_{t-1} \mid \vx_t, \vx_0)}{p_\theta(\vx_{t-1} \mid \vx_t)}}$,
+$\log p(\vx_0) \geq \E_{q(\vx_{1:T} \mid \vx_0)} \log(\frac{p(\vx_{0:T})}{q(\vx_{1:T} \mid \vx_0)}) =
+\textcolor{orange}{\E_{q(\vx_1 \mid \vx_0)}\log p_\theta(\vx_0 \!\!\mid\!\! \vx_1)} -
+\textcolor{purple}{\kl{q(\vx_T \!\!\mid\!\! \vx_0)}{p(\vx_T)}} -
+\textcolor{blue}{\sum_{t = 2}^T \E_{q(\vx_t \mid \vx_0)} \kl{q(\vx_{t-1} \!\!\mid\!\! \vx_t, \vx_0)}{p_\theta(\vx_{t-1} \!\!\mid\!\! \vx_t)}}$,
 where \textcolor{orange}{orange} and \textcolor{purple}{purple} are the same as in VAEs,
 and \textcolor{blue}{blue} are the extra loss functions.
 In a sense VAEs are 1-step diffusion models.
@@ -511,6 +522,120 @@ because conditional models are not diverse.
 
 High-res images are expensive to model.
 Predict in latent space, decode with a decoder.
+
+\section{Reinforcement learning}
+
+Environment is a Markov Decision Process:
+states $S$, actions $A$,
+reward $r : S \times A \to \R$,
+transition $p: S \times A \to S$,
+initial $s_0 \in S$,
+discount factor $\gamma$.
+$r$ and $p$ are deterministic, can be a distribution.
+Learn policy $\pi : S \to A$.
+Value $V_\pi: S \to \R$, the reward from $s$ under $\pi$.
+\textbf{Bellman eq.}: $G_t \coloneqq \sum_{k = 0}^\infty \gamma^k R_{t + k + 1},$
+$v_\pi(s) \coloneqq \E_\pi[G_t \mid S_t = s]
+= \E_\pi[R_{t+1} + \gamma G_{t+1} \mid S_t = s]
+= \sum_a \pi(a \mid s) \sum_{s'} \sum_r p(s', r \mid s, a)[r + \gamma \E_\pi[G_{t+1} \mid S_{t+1} = s']]
+= \sum_a \pi(a \mid s) \sum_{s', r} p(s', r \mid s, a)[r + \gamma v_\pi(s')]]$.
+Can be solved via dynamic programming (needs knowledge of $p$),
+Monte-Carlo or Temporal Difference learning.
+
+\subsection{Dynamic programming}
+
+Value iteration: compute optimal $v_*$, then $\pi_*$.
+
+Policy iteration: compute $v_\pi$ and $\pi$ together.
+
+For any $V_\pi$ the greedy policy (optimal) is
+$\pi'(s) = \argmax_{a \in A}(r(s, a) + \gamma V_\gamma(p(s, a)))$.
+
+\textbf{Bellman optimality}: $v_*(s) = \max_a q_*(s, a)
+= \max_a \sum_{s', r} p(s', r \mid s, a)[r + \gamma v_*(s')]$
+$ \Rightarrow $ update step:
+$V_{\mathrm{new}}^*(s) = \max_{a \in A} (r(s, a) + \gamma V_{\mathrm{old}}^*(s'))$,
+when $V_{\mathrm{old}}^* = V_{\mathrm{new}}^*$, we have optimal policy.
+
+Converges in finite steps, more efficient than policy iteration.
+But needs knowledge of $p$,
+iterates over all states and $\mathcal{O}(|S|)$ memory.
+
+\subsection{Monte Carlo sampling}
+
+Sample trajectories, estimate $v_\pi$ by averaging returns.
+Doesn't need full $p$, is unbiased,
+but high variance, exploration/exploitation dilemma, may not reach term. state.
+
+\subsection{Temporal Difference learning}
+
+For each $s \to s'$ by action $a$ update:
+$\Delta V(s) = r(s, a) + \gamma V(s') - V(s)$.
+\textbf{$\bm\varepsilon$-greedy policy}: with prob. $\varepsilon$ choose random action, else greedy.
+
+\subsection{Q-learning}
+
+$Q$-value f.: $q_\pi(s, a) \coloneqq \E_\pi[G_t \mid S_t = s, A_t = a]$.
+
+\textbf{SARSA} (on-policy):
+For each $S \to S'$ by action $A$ update:
+$\Delta Q(S, A) = r(S, A) + \gamma Q(S', A') - Q(S, A)$,
+$Q(S, A) {}+{}\!\!\!= \alpha \Delta Q(S, A)$,
+$\alpha$ is LR.
+
+\textbf{Q-learning} (off-policy/offline):
+$\Delta Q(S, A) = R_{t+1} + \gamma \max_a Q(S', a) - Q(S, A)$
+
+All these approaches do not approximate values of states that have not been visited.
+
+\subsection{Deep Q-learning}
+
+Use NN to predict $Q$-values.
+Loss is $(R + \gamma \max_{a'}Q_\theta(S', a') - Q_\theta(S, A))^2$,
+backprop only through $Q_\theta(S, A)$.
+Store history in replay buffer, sample from it for training $ \Rightarrow $ no correlation in samples.
+
+\subsection{Deep Q-networks}
+
+Encode state to low dimensionality with NN.
+
+\subsection{Policy gradients}
+
+$Q$-learning does not handle continuous action spaces.
+Learn a policy directly instead,
+$\pi(a_t \mid s_t) = \mathcal{N}(\mu_t, \sigma_t^2 \mid s_t)$.
+Sample trajectories: $p(\tau) = p(s_1, a_1, \dots, s_T, a_T) = p(s_1) \prod \pi(a_t \!\!\mid\!\! s_t) p(s_{t+1} \!\!\mid\!\! a_t, s_t)$.
+This is on-policy.
+
+Eval: $J(\theta) \coloneqq \E_{\tau \sim p_\theta(\tau)} [\sum_t \gamma^t r(s_t, a_t)]$.
+To optimize, need to compute $\E$ (see proofs).
+
+\textbf{REINFORCE}: MC sampling of $\tau$.
+To reduce variance, subtract baseline $b(s_t)$ from reward.
+
+\subsection{Actor-Critic}
+
+$\nabla_\theta J(\theta) = \frac{1}{N} \sum_i \sum_t \nabla \log \pi_\theta(a_t^i \mid s_t^i)(r(s_t^i, a_t^i) + \gamma V(s_{t+1})^i - V(s_t^i)))$. $\pi$ = actor, $V$ = critic.
+
+\end{multicols*}
+
+\begin{multicols*}{3}
+
+\section{Proofs}
+
+\subsection*{Policy gradients}
+\quad$J(\theta) = \E_{\tau \sim p(\tau)} [r(\tau)]
+= \int p(\tau) r(\tau) \dd \tau$.
+$\nabla_\theta J(\theta) = \int \nabla_\theta p(\tau) r(\tau) \dd \tau
+= \int p(\tau) \nabla_\theta \log p(\tau) r(\tau) \dd \tau
+= \E_{\tau \sim p(\tau)} [\nabla_\theta \log p(\tau) r(\tau)] = \E_{\tau \sim p(\tau)}[\nabla_\theta \log p(\tau) r(\tau)]$.
+
+$\log p(\tau) = \log[p(s_1)\prod \pi_\theta(a_t \mid s_t) p(s_{t+1} \mid a_t, s_t)]
+= 0 + \sum_t \log \pi_\theta(a_t \mid s_t) + 0$
+
+$\nabla_\theta J(\theta) = \E_{\tau \sim p(\tau)}
+[\textcolor{blue}{(\sum_t \nabla \log p_\theta(a_t^i \mid s_t^i)})\textcolor{purple}{(\sum_t \gamma^t r(s_t^i, a_t^i))}]$:
+\textcolor{blue}{max likelihood}, \textcolor{purple}{trajectory reward} scales the gradient.
 
 \end{multicols*}
 
