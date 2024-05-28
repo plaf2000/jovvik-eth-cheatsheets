@@ -12,7 +12,7 @@
 \usepackage{ccicons}
 \usepackage{hyperref}
 \usepackage{lmodern}
-\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
 \usepackage{soul}
 \usepackage{amssymb}
 \usepackage[neveradjust]{paralist}
@@ -166,10 +166,13 @@ Yannick Merkli,~page~\thepage~of~2
 
 \titleformat{\section}{\color{myorange}\sffamily\normalsize}{\thesection}{0.5em}{}
 \titleformat{\subsection}[runin]{\color{myorange2}\sffamily\small}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[runin]{\color{DarkOrchid}\sffamily\small}{\thesubsubsection}{0.5em}{}
 
 \titlespacing*{\section}
 {0pt}{0em}{0em}
 \titlespacing*{\subsection}
+{0pt}{0em}{1em}
+\titlespacing*{\subsubsection}
 {0pt}{0em}{1em}
 
 \begin{document}
@@ -353,7 +356,7 @@ Sample $z \sim p_z$ and get $x = f(z)$.
 \end{wrapfigure}
 \textbullet\ Squeeze: reshape, increase chan.
 
-\textbullet\ ActNorm: batchnorm with init. s.t. output $\sim \mathcal{N}(0, \mI)$.
+\textbullet\ ActNorm: batchnorm with init. s.t. output $\sim \mathcal{N}(0, \mI)$ for first minibatch.
     $\vy_{i,j} = \vs \odot \vx_{i,j} + \vb$,
     $\vx_{i, j} = (\vy_{i,j} - \vb) / \vs$,
     $\log\det = H \cdot W \cdot \sum_i \log \abs{\vs_i}$: linear.
@@ -617,6 +620,46 @@ To reduce variance, subtract baseline $b(s_t)$ from reward.
 
 $\nabla_\theta J(\theta) = \frac{1}{N} \sum_i \sum_t \nabla \log \pi_\theta(a_t^i \mid s_t^i)(r(s_t^i, a_t^i) + \gamma V(s_{t+1})^i - V(s_t^i)))$. $\pi$ = actor, $V$ = critic.
 
+\subsection{Motion synthesis}
+
+\textbf{Data-driven:}
+bad perf. out of distribution,
+needs expensive mocap.
+
+\textbf{DeepMimic:} RL to imitate reference motions while satisfying task objectives.
+
+\textbf{SFV}: use pose estimation: videos $\to$ train data.
+
+\section{Neural Implicit Representations}
+
+Voxels/volum. primitives are inefficient (cubic complexity).
+Meshes have limited granularity and have self-intersections.
+\textbf{Implicit representation}: $S = \{x \mid f(x) = 0\}$.
+Usually represented as signed distance function values on a grid.
+But this is again cubic.
+By UAT, approx. $f$ with NN.
+\textbf{Occupancy networks}: predict probability that point is inside the shape.
+\textbf{DeepSDF}: predict SDF.
+Both conditioned on input (2D image, class, etc.).
+Continuious, any topology/resolution, memory-efficient.
+NFs can model other properties (color, force, etc.).
+
+\subsection{Learning 3D Implicit Shapes}
+
+\textbf{Inference}: to get a mesh, sample points, predict occupancy/SDF, use marching cubes.
+
+\subsubsection{From watertight meshes}
+Sample points in space, compute GT occupancy/SDF, CE loss.
+
+\subsubsection{From point clouds} Only have samples on the surface.
+Weak supervision: loss = $|f_\theta(x_i)|^2 + \lambda \E_x(\norm{\nabla_x f_\theta(x)} - 1)^2$,
+edge points should have $\norm{\nabla f} \approx 1$ by def. of SDF, $f \approx 0$.
+
+\subsubsection{From images} Need differentiable rendering 3D $\to$ 2D.
+\textbf{Differentiable Volumetric Rendering}: for a point conditioned on encoded image,
+predict occupancy $f(x)$ and RGB color $c(x)$.
+Forward: for a pixel, raymarch and root find $x : f(x) = 0$ with secant. Set pixel color to $c(x)$.
+
 \end{multicols*}
 
 \begin{multicols*}{3}
@@ -636,6 +679,22 @@ $\log p(\tau) = \log[p(s_1)\prod \pi_\theta(a_t \mid s_t) p(s_{t+1} \mid a_t, s_
 $\nabla_\theta J(\theta) = \E_{\tau \sim p(\tau)}
 [\textcolor{blue}{(\sum_t \nabla \log p_\theta(a_t^i \mid s_t^i)})\textcolor{purple}{(\sum_t \gamma^t r(s_t^i, a_t^i))}]$:
 \textcolor{blue}{max likelihood}, \textcolor{purple}{trajectory reward} scales the gradient.
+
+\subsection*{Implicit differentiation}
+
+$\dv{y}{x}$ of $x^2 + y^2 = 1$:
+
+$\dv{x}(x^2 + y^2) = \dv{x}(1) \Rightarrow \dv{x}x^2 + \dv{x}y^2 = 0 \Rightarrow 2x + (\dv{y} y^2) \dv{y}{x} = 0$
+$\Rightarrow 2x + 2y \dv{y}{x} = 0 \Rightarrow \dv{y}{x} =- \frac{x}{y}$
+
+\section{Appendix}
+
+\subsection*{Secant Method}
+
+Line $(x_0, f(x_0)) \to (x_1, f(x_1))$, approx.:
+$y = \frac{f(x_1) - f(x_0)}{x_1 - x_0}(x - x_1) + f(x_1)$,
+$y = 0$ at $x_2 = x_1 - f(x_1) \frac{x_1 - x_0}{f(x_1) - f(x_0)}$.
+Approximates Newton's method without derivatives.
 
 \end{multicols*}
 
