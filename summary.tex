@@ -686,6 +686,36 @@ Adds fine details.
 Replace deep MLPs with learn. feature hash table + small MLP.
 For $x$ interp. features between corners.
 
+\subsection{3D Gaussian Splatting}
+
+\textbf{Alternative parametr.}:
+Find a cover of object with primitives, predict inside.
+Or sphere clouds. Both ineff. for thin structures.
+Ellipsoids are better.
+
+Initialize point cloud randomly or with an approx. reconstruction.
+Each point has a 3D Gaussian.
+Use camera params. to project (``splat'') Gaussians to 2D
+and differentiably render them.
+Adaptive density control moves/clones/merges points.
+
+Rasterization: for each pixel sort Gaussians by depth, opacity
+$\alpha = o \cdot \exp( - 0.5(x - \mu')\tran \Sigma'{}^{-1}(x - \mu'))$,
+rest same as NeRF.
+
+\section{Parametric body models}
+
+\subsection{Pictorial structure}
+
+Unary terms and pairwise terms between them with springs.
+
+\subsection{Deep features}
+
+Direct regression: predict joint coordinates with refinement.
+
+Heatmaps: predict probability for each pixel, maybe Gaussian.
+Can do stages sequentially.
+
 \end{multicols*}
 
 \begin{multicols*}{3}
