@@ -658,7 +658,33 @@ edge points should have $\norm{\nabla f} \approx 1$ by def. of SDF, $f \approx 0
 \subsubsection{From images} Need differentiable rendering 3D $\to$ 2D.
 \textbf{Differentiable Volumetric Rendering}: for a point conditioned on encoded image,
 predict occupancy $f(x)$ and RGB color $c(x)$.
-Forward: for a pixel, raymarch and root find $x : f(x) = 0$ with secant. Set pixel color to $c(x)$.
+\textbf{Forward}: for a pixel, raymarch and root find $\hat{p} : f(\hat{p}) = 0$ with secant. Set pixel color to $c(\hat{p})$.
+\textbf{Backward}: see proofs.
+
+\subsection{Neural Radiance Fields (NeRF)} \phantom{a}
+
+$(x, y, z, \theta, \phi) \xrightarrow{\textsc{nn}} (r, g, b, \sigma)$.
+Density is predicted before adding view direction $\theta, \phi$,
+then one layer for color.
+\textbf{Forward}: shoot ray, sample points along it and blend:
+$\alpha \coloneqq 1 - \exp( - \sigma_i \delta_i), \delta_i \coloneqq t_{i+1} - t_i,
+T_i \coloneqq \prod_{j = 1}^{i-1}(1 - \alpha_j)$,
+color is $c = \sum_i T_i \alpha_i c_i$.
+Optimized on many views of the scene.
+Can handle transparency/thin structure,
+but worse geometry.
+Needs many (50+) views for training, slow rendering for high res,
+only models static scenes.
+
+\subsubsection{Positional Encoding for High Frequency Details}
+Replace $x, y, z$ with positional encoding or random Fourier features.
+Adds fine details.
+
+\subsubsection{NeRF from sparse views} Regularize geometry and color.
+
+\subsubsection{Fast NeRF render. and train.}
+Replace deep MLPs with learn. feature hash table + small MLP.
+For $x$ interp. features between corners.
 
 \end{multicols*}
 
@@ -686,6 +712,19 @@ $\dv{y}{x}$ of $x^2 + y^2 = 1$:
 
 $\dv{x}(x^2 + y^2) = \dv{x}(1) \Rightarrow \dv{x}x^2 + \dv{x}y^2 = 0 \Rightarrow 2x + (\dv{y} y^2) \dv{y}{x} = 0$
 $\Rightarrow 2x + 2y \dv{y}{x} = 0 \Rightarrow \dv{y}{x} =- \frac{x}{y}$
+
+\subsection*{DVR Backward pass}
+$\pdv{L}{\theta} = \sum_u \pdv{L}{\hat\mI_u} \cdot \pdv{\hat\mI_u}{\theta} \sep\!$
+$\pdv{\hat\mI_u}{\theta} = \pdv{c_\theta(\hat\vp)}{\theta} + \pdv{t_\theta(\hat\vp)}{\hat\vp}
+ \cdot \pdv{\hat\vp}{\theta}$.
+Ray $\hat\vp = r_0 + \hat{d}\vw$,
+$r_0$ is camera pos., $\vw$ is ray dir., $\hat{d}$ is ray dist.
+Implicit def.: $f_\theta(\hat\vp) = \tau$.
+Diff.:
+$\pdv{f_\theta(\hat\vp)}{\theta} + \pdv{f_\theta(\hat\vp)}{\hat\vp} \cdot \pdv{\hat\vp}{\theta} = 0 \Rightarrow
+\pdv{f_\theta(\hat\vp)}{\theta} + \pdv{f_\theta(\hat\vp)}{\hat\vp} \cdot \vw\pdv{\hat{d}}{\theta} = 0 \Rightarrow 
+\pdv{\hat\vp}{\theta} = \vw \pdv{\hat{d}}{\theta} = - \vw(\pdv{f_\theta(\hat{\vp})}{\hat{\vp}} \cdot \vw)^{-1}
+\pdv{f_\theta(\hat\vp)}{\theta}$
 
 \section{Appendix}
 
