@@ -716,6 +716,45 @@ Direct regression: predict joint coordinates with refinement.
 Heatmaps: predict probability for each pixel, maybe Gaussian.
 Can do stages sequentially.
 
+\subsection{3D}
+
+Naive 2D $\to$ 3D lift works.
+But can't define constraints $ \Rightarrow $ 2m arms sometimes.
+
+\textbf{Skinned Multi-Person Linear model} (SMPL) is the standard non-commerical model.
+3D mesh, base mesh is $\sim$7k vertices, designed by an artist.
+To produce the model, point clouds (scans) need to be aligned with the mesh.
+\textbf{Shape deformation subspace}: for a set of human meshes T-posing,
+vectorize their vertices $T$ and subtract the mean mesh.
+With PCA represent any person as weighted sum of 10-300 basis people, $T = S\beta + \mu$.
+
+For pose, use \textbf{Linear Blend Skinning}.
+$\vt_i' = \sum_k w_{ki} \mG_k(\bm\theta, \mJ)\vt_i$,
+where $\vt$ is the T-pose positions of vertices,
+$\vt'$ is transformed, $w$ are weights,
+$\mG_k$ is rigid bone transf.,
+$\bm\theta$ is pose, $\mJ$ are joint positions.
+Linear assumption produces artifacts.
+\textbf{SMPL}:
+$\vt_i' = \sum_k w_{ki} \mG_k(\bm\theta, \mJ(\bm\beta))(\vt_i + \vs_i(\bm\beta) + \vp_i(\bm\theta))$.
+Adds shape correctives $\vs(\bm\beta) = \mS\bm\beta$,
+pose cor. $\vp(\bm\theta) = \mP\bm\theta$,
+$\mJ$ dep. on shape $\bm\beta$.
+
+Predicting human pose is just predicting $\bm\beta, \bm\theta$ and camera parameters.
+
+\subsubsection{Optimization-based Fitting} Predict 2D joint locations,
+fit SMPL to them by argmin with prior regularization.
+Argmin is hard to find, learn $F$: $\Delta \theta = F(\pdv{L_{reproj}}{\theta}, \theta^t, x)$.
+Issues: self-occlusion, no depth info, non-rigid deformation (clothes).
+
+\subsubsection{Template-based capture}
+Scan for first frame, then track with SMPL.
+
+\subsubsection{Animatable Neural Implicit Surfaces}
+
+Model base shape and $w$ with 2 NISs.
+
 \end{multicols*}
 
 \begin{multicols*}{3}
