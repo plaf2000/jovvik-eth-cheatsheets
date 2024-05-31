@@ -632,11 +632,11 @@ needs expensive mocap.
 
 \section{Neural Implicit Representations}
 
-Voxels/volum. primitives are inefficient (cubic complexity).
+Voxels/volum. primitives are inefficient ($n^3$ compl.).
 Meshes have limited granularity and have self-intersections.
 \textbf{Implicit representation}: $S = \{x \mid f(x) = 0\}$.
-Usually represented as signed distance function values on a grid.
-But this is again cubic.
+Can be invertibly transformed without accuracy loss.
+Usually represented as signed distance function values on a grid, but this is again $n^3$.
 By UAT, approx. $f$ with NN.
 \textbf{Occupancy networks}: predict probability that point is inside the shape.
 \textbf{DeepSDF}: predict SDF.
@@ -677,8 +677,8 @@ Needs many (50+) views for training, slow rendering for high res,
 only models static scenes.
 
 \subsubsection{Positional Encoding for High Frequency Details}
-Replace $x, y, z$ with positional encoding or random Fourier features.
-Adds fine details.
+Replace $x, y, z$ with pos. enc. or rand. Fourier feats.
+Adds high frequency feats.
 
 \subsubsection{NeRF from sparse views} Regularize geometry and color.
 
@@ -743,7 +743,7 @@ $\mJ$ dep. on shape $\bm\beta$.
 
 Predicting human pose is just predicting $\bm\beta, \bm\theta$ and camera parameters.
 
-\subsubsection{Optimization-based Fitting} Predict 2D joint locations,
+\subsubsection{Optimization-based is added. Fitting} Predict 2D joint locations,
 fit SMPL to them by argmin with prior regularization.
 Argmin is hard to find, learn $F$: $\Delta \theta = F(\pdv{L_{reproj}}{\theta}, \theta^t, x)$.
 Issues: self-occlusion, no depth info, non-rigid deformation (clothes).
@@ -803,6 +803,27 @@ Line $(x_0, f(x_0)) \to (x_1, f(x_1))$, approx.:
 $y = \frac{f(x_1) - f(x_0)}{x_1 - x_0}(x - x_1) + f(x_1)$,
 $y = 0$ at $x_2 = x_1 - f(x_1) \frac{x_1 - x_0}{f(x_1) - f(x_0)}$.
 Approximates Newton's method without derivatives.
+
+\subsection*{Implicit plane from 3 points}
+
+$(x_1, 0, 0), (0, y_1, 0), (0, 0, z_1) \Rightarrow x / x_1 + y / y_1 + z / z_1 - 1 = 0$.
+More generally: let $a, b$ any vectors on plane,
+$n \coloneqq a \times b = (a_2 b_3 - a_3 b_2, a_3b_1 - a_1b_3, a_1b_2 - a_2b_1) \Rightarrow n_1 x + n_2 y + n_3 z + k = 0$,
+subst. any point to find $k$.
+
+\subsection*{Torus equation}
+
+\!\!\!\!$(\sqrt{x^2 + y^2} - R)^2 + z^2 = r^2$, cent. $0$, around $z$ axis.
+
+\subsection*{Derivatives}
+
+$(f \cdot g)' = f'g + fg'$,
+$(f / g)' = (f'g - fg') / g^2$,
+$(f \circ g)' = f'(g)g'$,
+$(f^{-1})' = 1 / f'(f^{-1})$.
+
+\subsection*{Misc}
+A \textbf{translation vector} is added.
 
 \end{multicols*}
 
