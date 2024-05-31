@@ -618,7 +618,8 @@ To reduce variance, subtract baseline $b(s_t)$ from reward.
 
 \subsection{Actor-Critic}
 
-$\nabla_\theta J(\theta) = \frac{1}{N} \sum_i \sum_t \nabla \log \pi_\theta(a_t^i \mid s_t^i)(r(s_t^i, a_t^i) + \gamma V(s_{t+1})^i - V(s_t^i)))$. $\pi$ = actor, $V$ = critic.
+$\nabla_\theta J(\theta) = \frac{1}{N} \sum_i \sum_t \nabla \log \pi_\theta(a_t^i \mid s_t^i)(r(s_t^i, a_t^i) + \gamma V(s_{t+1}^i) - V(s_t^i)))$. $\pi$ = actor, $V$ = critic.
+Est. value with NN, not traj. rollouts.
 
 \subsection{Motion synthesis}
 
@@ -761,6 +762,28 @@ Model base shape and $w$ with 2 NISs.
 
 \section{Proofs}
 
+\subsection*{KL for ELBO} Let $p(z) = \mathcal{N}(0, \mI), q(z\mid x) = \mathcal{N}(\mu, \sigma^2 \mI)$, $J \coloneqq \dim z$.
+By $\int p(z) \log q(z) \dd z = - \frac{J}{2} \log 2\pi - \frac{1}{2} \sum_{j = 1}^J \log\sigma^2_{q, j}
+- \frac{1}{2} \sum_{j = 1}^J \frac{\sigma_{p, j}^2 + (\mu_{p, j} - \mu_{q, j})^2}{\sigma^2_{q, j}}$
+we have $\int q(z\mid x) \log p(z) \dd z = - \frac{J}{2} \log 2\pi - \frac{1}{2} \sum_{j = 1}^J(\sigma_j^2 + \mu_j^2)$
+and $\int q(z\mid x) \log q(z\mid x) \dd z = \frac{J}{2} \log 2\pi - \frac{1}{2} \sum_{j = 1}^J(\log \sigma_j^2 + 1)$,
+so $ - \kl{q(z\mid x)}{p(z)} = \frac{1}{2} \sum_{j = 1}^J (1 + \log \sigma_j^2 - \mu_j^2 - \sigma_j^2)$
+
+\subsection*{Expectation of reparam.}
+
+\!\!$\nabla_\varphi \E_{p_\varphi(z)}(f(z)) = \nabla_\varphi \int p_\varphi(z) f(z) \dd z
+= \nabla_\varphi\! \int\!\! p_\varphi(z) f(z) \dd z \!=\! \nabla_\varphi\! \int\!\! p_\varphi(z) f(g(\epsilon, \varphi)) \dd \epsilon
+\!=\! \E_{p(\epsilon)}\! \nabla_\varphi f(g(\epsilon, \varphi))$
+
+\subsection*{Bellman operator converges} Want to prove that value iteration converges to the optimal policy:
+$\lim_{k \to \infty} (T^*)^k(V) = V_*$,
+where $T^*(V) = \max_{a \in A} \sum_{s', r} p(s', r \mid s, a)(r(s, a) + \gamma V(s'))$.
+$T^*$ is a contraction mapping, i.e. $\max_{s \in S}|T^*(V_1(s)) - T^*(V_2(s))| \leq \gamma\max_{s \in S}|V_1(s) - V_2(s)|$:
+$\mathrm{LHS} \leq \max_{s, a}|\sum_{s', r} p(s', r \mid s, a)(r(s, a) + \gamma V_1(s')) - \sum_{s', r} p(s', r \mid s, a)(r(s, a) + \gamma V_2(s'))|
+= \gamma \max_{s, a}|\sum_{s', r} p(s', r \mid s, a)(V_1(s') - V_2(s')| = \mathrm{RHS}$.
+By the contraction th., $T^*$ has a unique fixed point, and we know $V^*$ is a FP of $T^*$.
+As $\gamma < 1$, $\mathrm{LHS}(V, V^*) \to 0$ and $T^*(V) \to V_*$.
+
 \subsection*{Policy gradients}
 \quad$J(\theta) = \E_{\tau \sim p(\tau)} [r(\tau)]
 = \int p(\tau) r(\tau) \dd \tau$.
@@ -824,6 +847,8 @@ $(f^{-1})' = 1 / f'(f^{-1})$.
 
 \subsection*{Misc}
 A \textbf{translation vector} is added.
+\textbf{Bayes rule}:
+$P(A \mid B) = P(B \mid A)P(A) / P(B)$.
 
 \end{multicols*}
 
