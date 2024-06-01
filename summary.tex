@@ -40,6 +40,8 @@
 
 \newcommand{\extratext}[1]{\iftoggle{showextratext}{#1}{}}
 
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO:} #1}}
+
 \newcommand*{\tran}{^{\mathsf{T}}} % (DIN) EN ISO 80000-2:2013
 \newcommand{\kl}[2]{D_{\mathrm{KL}}(#1\lVert#2)}
 \newcommand{\js}[2]{D_{\mathrm{JS}}(#1\lVert#2)}
@@ -756,6 +758,44 @@ Scan for first frame, then track with SMPL.
 
 Model base shape and $w$ with 2 NISs.
 
+\section{ML}
+
+Perceptron converges in finite time iff data is linearly separable.
+\textbf{MAP} $\theta^* \in \argmax p(\theta \mid X, y)$.
+\textbf{MLE} $\theta \in \argmax p(y \mid X, \theta)$ consistent, efficient.
+\textbf{Binary cross-entropy} $L(\theta) = - y_i \log(\hat{y}_i) - (1 - y_i) \log(1 - \hat{y}_i)$.
+Cross-entropy $H(p_d, p_m) = H(p_d) + \kl{p_d}{p_m}$.
+For any continuous $f$ $\exists \mathrm{NN}\ g(x), |g(x) - f(x)| < \varepsilon$.
+1 hidden layer is enough, activation function needs to be nonlinear.
+
+\todo{MLP backprop}
+
+\todo{activation functions}
+
+\todo{GD algos}
+
+\section{CNN} $T$ is linear if $T(\alpha \vu + \beta \vv) = \alpha T(\vu) + \beta T(\vv)$,
+invariant to $f$ if $T(f(\vu)) = T(\vu)$,
+equivariant to $f$ if $T(f(\vu)) = f(T(\vu))$.
+Any linear shift-equivariant $T$ can be written as a convolution.
+$I'(i, j) = \sum_{m =- k}^k \sum_{n =- k}^k K(m, n)I(m + i, n + j)$.
+\todo{correlation vs conv}
+
+\todo{backward/weight update}
+
+\todo{backprop example}
+
+Max-pooling: $z^{(l)} = \max z_i^{(l - 1)}$. Let $i^* \coloneqq \argmax_i z_i^{(l - 1)}$.
+$\pdv{z^{(l)}}{z_i^{(l - 1)}} = [i = i^*]$, $\delta^{(l - 1)} = \delta^{(l)}_{i^*}$.
+Max-unpooling: remember where the max came from when pooling.
+\todo{other unpooling}
+Learnable upsampling: transposed conv, output is copies of filter weighted by input, summed on overlaps.
+Size after conv: $(\mathrm{input} - \mathrm{kernel} + 2 \cdot \mathrm{padding}) / \mathrm{stride} + 1$.
+
+\section{RNN}
+
+\todo{RNN}
+
 \end{multicols*}
 
 \begin{multicols*}{3}
@@ -768,6 +808,13 @@ By $\int p(z) \log q(z) \dd z = - \frac{J}{2} \log 2\pi - \frac{1}{2} \sum_{j = 
 we have $\int q(z\mid x) \log p(z) \dd z = - \frac{J}{2} \log 2\pi - \frac{1}{2} \sum_{j = 1}^J(\sigma_j^2 + \mu_j^2)$
 and $\int q(z\mid x) \log q(z\mid x) \dd z = \frac{J}{2} \log 2\pi - \frac{1}{2} \sum_{j = 1}^J(\log \sigma_j^2 + 1)$,
 so $ - \kl{q(z\mid x)}{p(z)} = \frac{1}{2} \sum_{j = 1}^J (1 + \log \sigma_j^2 - \mu_j^2 - \sigma_j^2)$
+
+\subsection*{Optimal discriminator} $D^*$ maximizes $V(G, D) = \int_x p_d \log D(x) \dd x + \int_z p(z) \log(1 - D(G(Z))) \dd z
+= \int_x p_d \log D(x) \dd x + p_m(x) \log(1 - D(x)) \dd z$,
+and for $f(y) = a\log(y) + b\log(1 - y):$
+$f'(y) = \frac{a}{y} - \frac{b}{1 - y} \Rightarrow f'(y) = 0 \Leftrightarrow y = \frac{a}{a + b}$,
+$f''(\frac{a}{a + b}) = - \frac{a}{\left(\frac{a}{a + b}\right)^2} - \frac{b}{\left(1 - \frac{a}{a + b}\right)^2} < 0$
+for $a, b > 0 \Rightarrow $ max. at $\frac{a}{a + b}$ $\Rightarrow$ $D^* = \frac{p_d(x)}{p_d(x) + p_m(x)}$
 
 \subsection*{Expectation of reparam.}
 
@@ -844,6 +891,13 @@ $(f \cdot g)' = f'g + fg'$,
 $(f / g)' = (f'g - fg') / g^2$,
 $(f \circ g)' = f'(g)g'$,
 $(f^{-1})' = 1 / f'(f^{-1})$.
+
+\subsection*{Linear algebra}
+
+$\det(\mA + \vu\vv\tran) = (1 + \vv\tran \mA^{-1}\vu) \det \mA$
+
+\subsection*{Jensen's inequality}
+$f(\E[X]) \leq \E[f(X)]$ and $f(tx_1 + (1 - t)x_2) \leq tf(x_1) + (1 - t)f(x_2)$ if $f$ is convex, i.e. $\forall t \in [0, 1], x_1, x_2 \in X : f(tx_1 + (1 - t)x_2) \leq tf(x_1) + (1 - t)f(x_2)$.
 
 \subsection*{Misc}
 A \textbf{translation vector} is added.
