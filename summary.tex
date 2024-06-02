@@ -30,6 +30,7 @@
 \usepackage{svg}
 \usepackage{wrapfig}
 \usepackage{titlesec}
+\usepackage{booktabs}
 
 \providetoggle{showextratext}
 \settoggle{showextratext}{false}
@@ -746,7 +747,7 @@ $\mJ$ dep. on shape $\bm\beta$.
 
 Predicting human pose is just predicting $\bm\beta, \bm\theta$ and camera parameters.
 
-\subsubsection{Optimization-based is added. Fitting} Predict 2D joint locations,
+\subsubsection{Optimization-based fitting} Predict 2D joint locations,
 fit SMPL to them by argmin with prior regularization.
 Argmin is hard to find, learn $F$: $\Delta \theta = F(\pdv{L_{reproj}}{\theta}, \theta^t, x)$.
 Issues: self-occlusion, no depth info, non-rigid deformation (clothes).
@@ -770,7 +771,21 @@ For any continuous $f$ $\exists \mathrm{NN}\ g(x), |g(x) - f(x)| < \varepsilon$.
 
 \todo{MLP backprop}
 
-\todo{activation functions}
+\subsection{Activation functions} \phantom{a}
+
+\renewcommand{\arraystretch}{0}
+\begin{tabular}[]{@{}c@{}ccc@{}}
+    \toprule
+    name & $f(x)$ & $f'(x)$ & $f(X)$ \\
+    \midrule
+    sigmoid & $\frac{1}{1 + e^{-x}}$ & $\sigma(x)(1 - \sigma(x))$ & $(0, 1)$ \\
+    tanh & $\frac{e^x - e^{-x}}{e^x + e^{-x}}$ & $1 - \tanh(x)^2$ & $( - 1, 1)$ \\
+    ReLU & $\max(0, x)$ & $[x \geq 0]$ & $[0, \infty)$ \\
+\end{tabular}
+Finite range: stable training, mapping to prob. space.
+Sigmoid, tanh saturate (value with large mod have small gradient),
+Tanh is linear around 0 (easy learn),
+ReLU can blow up activation; piecewise linear $ \Rightarrow $ faster convergence.
 
 \todo{GD algos}
 
@@ -778,19 +793,22 @@ For any continuous $f$ $\exists \mathrm{NN}\ g(x), |g(x) - f(x)| < \varepsilon$.
 invariant to $f$ if $T(f(\vu)) = T(\vu)$,
 equivariant to $f$ if $T(f(\vu)) = f(T(\vu))$.
 Any linear shift-equivariant $T$ can be written as a convolution.
+Convolution:
+$I'(i, j) = \sum_{m =- k}^k \sum_{n =- k}^k K(\textcolor{red}{-}m, \textcolor{red}{-}n)I(m + i, n + j)$.
+Correlation:
 $I'(i, j) = \sum_{m =- k}^k \sum_{n =- k}^k K(m, n)I(m + i, n + j)$.
-\todo{correlation vs conv}
-
-\todo{backward/weight update}
+Conv. forward: $z^{(l)} = w^{(l)} * z^{(l - 1)} + b^{(l)} = \sum_m \sum_n w_{m, n}^{(l)} + z_{i - m, j - n}^{(l - 1)} + b^{(l)}$.
+Backward inputs: $\delta^{(l - 1)} = \pdv{C}{z_{i,j}^{(l - 1)}} = \delta^{(l)} * \mathrm{ROT}_{180}(w^{(l)})$,
+backward kernel: $\pdv{C}{w_{m, n}^{(l)}} = \delta^{(l)} * \mathrm{ROT}_{180}(z^{(l - 1)})$.
+Size after conv or pool: $(\mathrm{in} + 2 \cdot \mathrm{pad} - \mathrm{dil} \cdot (\mathrm{kern} - 1) - 1) / \mathrm{stride} + 1$,
+rounded down.
 
 \todo{backprop example}
 
-Max-pooling: $z^{(l)} = \max z_i^{(l - 1)}$. Let $i^* \coloneqq \argmax_i z_i^{(l - 1)}$.
+Max-pooling: $z^{(l)} = \max z_i^{(l - 1)}$. $i^* \coloneqq \argmax_i z_i^{(l - 1)}$,
 $\pdv{z^{(l)}}{z_i^{(l - 1)}} = [i = i^*]$, $\delta^{(l - 1)} = \delta^{(l)}_{i^*}$.
-Max-unpooling: remember where the max came from when pooling.
-\todo{other unpooling}
+Unpooling: nearest-neighbor (duplicate), bed of nails (only top left, rest 0), max-unpooling (remember where max came from when pooling).
 Learnable upsampling: transposed conv, output is copies of filter weighted by input, summed on overlaps.
-Size after conv: $(\mathrm{input} - \mathrm{kernel} + 2 \cdot \mathrm{padding}) / \mathrm{stride} + 1$.
 
 \section{RNN}
 
