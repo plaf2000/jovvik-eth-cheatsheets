@@ -5,7 +5,7 @@
 \usetikzlibrary{shapes,positioning,arrows,fit,calc,graphs,graphs.standard}
 \usepackage{multicol}
 \usepackage{wrapfig}
-\usepackage[top=3mm,bottom=4mm,left=3mm,right=3mm]{geometry}
+\usepackage[top=4mm,bottom=5mm,left=4mm,right=4mm]{geometry}
 \usepackage[framemethod=tikz]{mdframed}
 \usepackage{microtype}
 \usepackage{mathtools}
@@ -898,12 +898,49 @@ Learnable upsampling: transposed conv, output is copies of filter weighted by in
 , usually $\vh_t = \tanh(\mW_{hh} \vh_{t-1} + \mW_{xh}\vx_t)$.
 
 \textbf{BPTT}: $\pdv{L}{\mW} = \sum_t \pdv{L_t}{\mW}$, treat unrolled model as multi-layer.
+$\pdv{L_t}{W}$ has a term of $\pdv{\vh_t}{\vh_k} = \prod_{i = k + 1}^t \pdv{\vh_i}{\vh_{i-1}}
+= \prod_{i = k + 1}^t \mW_{hh}\tran \diag f'(\vh_{i-1})$.
+
 \textbf{Exploding/vanishing gradients}: $\vh_t = \mW^t \vh_1$.
 If $\mW$ is diagonaliz., $\mW = \mQ \diag \bm\lambda \mQ\tran = \mQ \bm\Lambda \mQ\tran, \mQ \mQ\tran = \mI
 \Rightarrow \vh_t = (\mQ\bm\Lambda \mQ\tran)^t \vh_1 = (\mQ (\diag \bm\lambda)^t \mQ\tran) \vh_1$
 $\Rightarrow \vh_t$ becomes the dominant eigenvector of $\mW$.
+$\pdv{\vh_t}{\vh_k}$ has this issue.
+Long-term contributions vanish, too sensitive to recent distrations.
+\textbf{Truncated BPTT}: take the sum only over the last $\kappa$ steps.
+\textbf{Gradient clipping} $\frac{\mathrm{threshold}}{\norm{\nabla}} \nabla$ fights exploding gradients.
 
-\todo{RNN}
+\subsection{LSTM}
+We want constant error flow, not multiplied by $W^t$.
+\begin{itemize}
+    \item Input gate: which values to write,
+    \item forget gate: which values to reset,
+    \item output gate: which values to read,
+    \item gate: candidate values to write to state.
+\end{itemize}
+\begin{minipage}{0.4\linewidth}
+    \begin{align*}
+        \begin{pmatrix}
+            \vi \\
+            \vf \\
+            \vo \\
+            \vg
+        \end{pmatrix} & = \begin{pmatrix}
+            \sigma \\
+            \sigma \\
+            \sigma \\
+            \tanh
+        \end{pmatrix} W \begin{pmatrix}
+            \vx_t \\
+            \vh_{t-1}
+        \end{pmatrix} \\
+        \vc_t & = \vf \odot \vc_{t-1} + \vi \odot \vg \\
+        \vh_t & = \vo \odot \tanh(\vc_t)
+        \end{align*}
+    \end{minipage}%
+\begin{minipage}{0.4\linewidth}
+    \includesvg[width=\linewidth]{figures/LSTM.svg}
+\end{minipage}
 
 \end{multicols*}
 
@@ -922,6 +959,17 @@ $\pdv{\vh_t}{W} = \pdv{W} \vh_t(\rho(W), \vh_{t-1}(W))
 = \pdv{{}^+ \vh_t}{W} + \pdv{\vh_t}{\vh_{t-1}} \pdv{\vh_{t-1}}{W}
 = \pdv{{}^+ \vh_t}{W} + \pdv{\vh_t}{\vh_{t-1}} \left[\pdv{{}^+ \vh_{t-1}}{W} + \pdv{\vh_{t-1}}{\vh_{t-2}}\pdv{{}^+ \vh_{t - 2}}{W} + \dots\right]
 = \sum_{k = 1}^t \pdv{\vh_t}{\vh_k} \pdv{{}^+ \vh_k}{W} \sep \pdv{L_t}{W} = \pdv{L_t}{\hat{y}_t} \pdv{\hat{y}_t}{\vh_t} \sum_{k = 1}^t \pdv{\vh_t}{\vh_k} \pdv{{}^+ \vh_k}{W}$
+
+\subsection*{BPTT divergence}
+
+Let $\lambda_1$ be the largest singular value of $\mW_{hh}$,
+$\norm{\diag f'(\vh_{i-1})} < \gamma, \gamma \in \R, \norm{\cdot}$ is the spectral norm.
+If $\lambda_1 < \gamma^{-1}$, then
+$\forall i \ \ \norm{\pdv{\vh_i}{\vh_{i-1}}} \leq \norm{\mW_{hh}\tran} \norm{\diag f'(\vh_{i-1})} < \frac{1}{\gamma}\gamma < 1$
+$\Rightarrow \exists \eta : \forall i \ \ \norm{\pdv{\vh_i}{\vh_{i-1}}} \leq \eta < 1$,
+by induction over $i$: $\norm{\prod_{i = k + 1}^t \pdv{\vh_i}{\vh_{i-1}}} \leq \eta^{t - k}$,
+so the gradients vanish as $t \to \infty$.
+Similarly, if $\lambda_1 > \gamma^{-1}$, then gradients explode.
 
 \subsection*{KL for ELBO} Let $p(z) = \mathcal{N}(0, \mI), q(z\mid x) = \mathcal{N}(\mu, \sigma^2 \mI)$, $J \coloneqq \dim z$.
 By $\int p(z) \log q(z) \dd z = - \frac{J}{2} \log 2\pi - \frac{1}{2} \sum_{j = 1}^J \log\sigma^2_{q, j}
