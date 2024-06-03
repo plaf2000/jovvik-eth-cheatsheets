@@ -229,8 +229,9 @@ measure similarity of prob. distr.
 
 $\kl{P}{Q} \neq \kl{Q}{P}, \kl{P}{Q} \geq 0$
 
-Likelihood $p_\theta(x) = \int_z p_\theta(x \mid z) p_\theta(z) \dd z$ is hard to max.,
-let enc. NN be $q_\phi(z \mid x)$,
+$z$ can also be categorical.
+Likelihood $p_\theta(x) = \int_z p_\theta(x \mid z) p_\theta(z) \dd z$ is hard to maximize,
+let encoder NN be $q_\phi(z \mid x)$,
 $\log p_\theta(x^{i}) = \textcolor{orange}{\E_z\left[\log p_\theta(x^{i} \mid z)\right]}
 - \textcolor{purple}{\kl{q_\phi(z \mid x^{i})}{p_\theta(z)}} + \textcolor{red}{\kl{q_\phi(z \mid x^{i})}{p_\theta(z \mid x^{i})}}$.
 \textcolor{red}{Red} is intractable, use $\geq 0$ to ignore it;
@@ -408,8 +409,8 @@ For $G$ the opt. $D^* = p_{\mathrm{d}}(\vx) / (p_{\mathrm{d}}(\vx) + p_{\mathrm{
 
 Jensen-Shannon divergence (symmetric):
 $\js{p}{q} = \frac{1}{2} \kl{p}{\frac{p + q}{2}} + \frac{1}{2} \kl{p}{\frac{p + q}{2}}$.
-Global minimum of $\js{p_{\mathrm{d}}}{p_{\mathrm{m}}}$ is the glob. min. of $V(G, D)$
-and $V(G, D^*) = - \log(4)$.
+Global minimum of $\js{p_{\mathrm{d}}}{p_{\mathrm{m}}}$ is the glob. min. of $V(G, D)$,
+$V(G, D^*) = - \log(4)$ and at optimum of $V(D^*, G)$ we have $p_d = p_m$.
 
 If $G$ and $D$ have enough capacity, at each update step $D$ reaches $D^*$
 and $p_{\mathrm{m}}$ improves $V(p_{\mathrm{m}}, D^*) \propto \sup_D \int_{\vx} p_{\mathrm{m}}(\vx) \log( - D(\vx)) \dd \vx$,
@@ -421,6 +422,10 @@ Use gradient \underline{ascent} on $\log(D(G(z)))$ instead.
 
 Model collapse: $G$ only produces one sample or one class of samples.
 Solution: \textbf{unrolling} --- use $k$ previous $D$ for each $G$ update.
+
+GANs are hard to compare, as likelihood is intractable.
+FID is a metric that calculates the distance between feature vectors
+calculated for real and generated images.
 
 DCGAN: pool $\to$ strided convolution, batchnorm, no FC, ReLU for $G$, LeakyReLU for $D$.
 
@@ -521,8 +526,9 @@ Add input $y$ to the model.
 
 \textbf{ControlNet}: don't retrain model, add layers that add something to block outputs.
 
-\textbf{Guidance}: mix predictions of a conditional and unconditional model,
+(Classifier-free) \textbf{guidance}: mix predictions of a conditional and unconditional model,
 because conditional models are not diverse.
+$\eta_{\theta_1}(x, c; t) = (1 + \rho)\eta_{\theta_1}(x, c; t) - \rho \eta_{\theta_2}(x; t)$.
 
 \subsection{Latent diffusion models}
 
@@ -707,6 +713,8 @@ Rasterization: for each pixel sort Gaussians by depth, opacity
 $\alpha = o \cdot \exp( - 0.5(x - \mu')\tran \Sigma'{}^{-1}(x - \mu'))$,
 rest same as NeRF.
 
+\includesvg[width=\linewidth]{figures/splatting.svg}
+
 \section{Parametric body models}
 
 \subsection{Pictorial structure}
@@ -786,7 +794,7 @@ backward bias: $\pdv{L}{\vb_i^{(l)}} =$ same, but no $\vz$.
     ReLU & $\max(0, x)$ & $[x \geq 0]$ & $[0, \infty)$ \\
 \end{tabular}
 Finite range: stable training, mapping to prob. space.
-Sigmoid, tanh saturate (value with large mod have small gradient),
+Sigmoid, tanh saturate (value with large mod have small gradient) $ \Rightarrow $ vanishing gradient,
 Tanh is linear around 0 (easy learn),
 ReLU can blow up activation; piecewise linear $ \Rightarrow $ faster convergence.
 
@@ -826,8 +834,9 @@ $I'(i, j) = \sum_{m =- k}^k \sum_{n =- k}^k K(m, n)I(m + i, n + j)$.
 Conv. forward: $z^{(l)} = w^{(l)} * z^{(l - 1)} + b^{(l)} = \sum_m \sum_n w_{m, n}^{(l)} + z_{i - m, j - n}^{(l - 1)} + b^{(l)}$.
 Backward inputs: $\delta^{(l - 1)} = \pdv{C}{z_{i,j}^{(l - 1)}} = \delta^{(l)} * \mathrm{ROT}_{180}(w^{(l)})$,
 backward kernel: $\pdv{C}{w_{m, n}^{(l)}} = \delta^{(l)} * \mathrm{ROT}_{180}(z^{(l - 1)})$.
-Size after conv or pool: $(\mathrm{in} + 2 \cdot \mathrm{pad} - \mathrm{dil} \cdot (\mathrm{kern} - 1) - 1) / \mathrm{stride} + 1$,
+Width or height after conv or pool: $(\mathrm{in} + 2 \cdot \mathrm{pad} - \mathrm{dil} \cdot (\mathrm{kern} - 1) - 1) / \mathrm{stride} + 1$,
 rounded down.
+Channels = number of kernels.
 
 1D conv as matmul:
 \(\begin{bmatrix}
@@ -948,8 +957,6 @@ We want constant error flow, not multiplied by $W^t$.
 
 \section{Proofs}
 
-\todo{MLP backprop}
-
 \subsection*{BPTT}
 
 $\rho$ is the identity function, $\partial^+$ is the immediate derivative, ignoring the effect from recurrence.
@@ -1069,10 +1076,19 @@ $\det(\mA + \vu\vv\tran) = (1 + \vv\tran \mA^{-1}\vu) \det \mA$
 \subsection*{Jensen's inequality}
 $f(\E[X]) \leq \E[f(X)]$ and $f(tx_1 + (1 - t)x_2) \leq tf(x_1) + (1 - t)f(x_2)$ if $f$ is convex, i.e. $\forall t \in [0, 1], x_1, x_2 \in X : f(tx_1 + (1 - t)x_2) \leq tf(x_1) + (1 - t)f(x_2)$.
 
+\subsection*{Gaussians}
+
+$\mathcal{N}(\mu_1, \Sigma_1) + \mathcal{N}(\mu_2, \Sigma_2)
+= \mathcal{N}(\mu_1 + \mu_2, \Sigma_1 + \Sigma_2)$,
+
+$a \cdot \mathcal{N}(\mu, \Sigma) = \mathcal{N}(a\mu, a^2\Sigma)$.
+
 \subsection*{Misc}
 A \textbf{translation vector} is added.
+
 \textbf{Bayes rule}:
 $P(A \mid B) = P(B \mid A)P(A) / P(B)$.
+A function $f$ is \textbf{volume preserving} if $\left|\det \pdv{f^{-1}(x)}{x}\right| = 1$.
 
 \end{multicols*}
 
