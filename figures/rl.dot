@@ -1,0 +1,16 @@
+digraph G {
+    polopt [shape=none, label="Policy Optimization"];
+    polgrad [shape=none, label="Policy Gradient"];
+    actorcritic [shape=none, label="Actor-Critic"];
+    td [shape=none, label="Temporal Difference"];
+    policyiter [shape=none, label="Policy Iteration"];
+    valueiter [shape=none, label="Value Iteration"];
+    qlearning [shape=none, label="Q-Learning"];
+    
+    polopt -> polgrad;
+    polgrad -> actorcritic;
+    td -> policyiter;
+    policyiter -> actorcritic;
+    td -> valueiter;
+    valueiter -> qlearning;
+};
