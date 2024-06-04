@@ -172,11 +172,11 @@ Yannick Merkli,~page~\thepage~of~2
 \titleformat{\subsubsection}[runin]{\color{DarkOrchid}\sffamily\small}{\thesubsubsection}{0.5em}{}
 
 \titlespacing*{\section}
-{0pt}{0em}{0em}
+{0pt}{0.3em}{0em}
 \titlespacing*{\subsection}
-{0pt}{0em}{1em}
+{0pt}{0.3em}{1em}
 \titlespacing*{\subsubsection}
-{0pt}{0em}{1em}
+{0pt}{0.1em}{1em}
 
 \begin{document}
 	
@@ -921,6 +921,10 @@ Long-term contributions vanish, too sensitive to recent distrations.
 \textbf{Truncated BPTT}: take the sum only over the last $\kappa$ steps.
 \textbf{Gradient clipping} $\frac{\mathrm{threshold}}{\norm{\nabla}} \nabla$ fights exploding gradients.
 
+\end{multicols*}
+
+\begin{multicols*}{3}
+
 \subsection{LSTM}
 We want constant error flow, not multiplied by $W^t$.
 \begin{itemize}
@@ -930,9 +934,6 @@ We want constant error flow, not multiplied by $W^t$.
     \item gate: candidate values to write to state.
 \end{itemize}
 
-\end{multicols*}
-
-\begin{multicols*}{3}
 \begin{minipage}{0.3\linewidth}
     \begin{align*}
         \begin{pmatrix}
@@ -1137,6 +1138,7 @@ A \textbf{translation vector} is added.
 
 \textbf{Bayes rule}:
 $P(A \mid B) = P(B \mid A)P(A) / P(B)$.
+
 A function $f$ is \textbf{volume preserving} if $\left|\det \pdv{f^{-1}(x)}{x}\right| = 1$.
 
 \textbf{Negative log-likelihood} $L(\hat{y}, y) = - \sum_i y_i \log \hat{y}_i$
