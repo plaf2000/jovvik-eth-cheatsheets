@@ -75,41 +75,7 @@
 \renewcommand{\baselinestretch}{.8}
 \pagestyle{empty}
 
-\global\mdfdefinestyle{header}{%
-linecolor=gray,linewidth=1pt,%
-leftmargin=0mm,rightmargin=0mm,skipbelow=0mm,skipabove=0mm,
-}
-
-\newcommand{\header}{
-\begin{mdframed}[style=header]
-\footnotesize
-\sffamily
-Cheat sheet\\
-Yannick Merkli,~page~\thepage~of~2
-\end{mdframed}
-}
-
-% \makeatletter
-% \renewcommand{\section}{\@startsection{section}{1}{0mm}%
-%                                 {0pt}%
-%                                 {0.5pt}%x
-%                                 {\color{myorange}\sffamily\small\bfseries}}
-% \renewcommand{\subsection}{\@startsection{subsection}{1}{\z@}%
-%                                 {0pt}%
-%                                 {0.1pt}%x
-%                             	{\color{myorange2}\sffamily\small}}
-
-
-% \makeatother
 \setlength{\parindent}{0pt}
-
-\newcommand{\mhl}[1]{\setlength{\fboxsep}{0pt}\colorbox{yellow}{#1}}
-\newcommand{\red}[1]{\textcolor{red}{#1}}
-\newcommand\iid{\stackrel{\mathclap{\normalfont\mbox{\tiny{iid}}}}{=}}
-\lstset{
-	basicstyle=\small,
-	mathescape
-}
 
 \def\myvector#1{\mathbf{#1}}
 \def\va{{\myvector{a}}}
@@ -184,6 +150,18 @@ Yannick Merkli,~page~\thepage~of~2
 
 \setlength{\columnseprule}{0.1pt}
 \begin{multicols*}{4}
+
+This document is a summary of the \textit{Machine Perception} course at ETH Z\"urich.
+This summary was created during the spring semester of 2024.
+Due to updates to the syllabus content, some material may no longer be relevant for future versions of the course.
+I do not guarantee correctness or completeness, nor is this document endorsed by the lecturers.
+The order of the chapters is not necessarily the order in which they were presented in the course.
+For the full \LaTeX \ source code, visit \texttt{\href{https://github.com/Jovvik/mp-notes}{github.com/Jovvik/mp-notes}}.
+
+All figures are created by the author, and, assuming the rules have not been changed,
+are not allowed to be used as a part of a cheat sheet during the exam.
+
+\newpage
     
 \section{Generative modelling}
 
