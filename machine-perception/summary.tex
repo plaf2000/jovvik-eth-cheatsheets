@@ -12,9 +12,11 @@
 \usepackage{ccicons}
 \usepackage{hyperref}
 \usepackage{lmodern}
+\PassOptionsToPackage{dvipsnames}{xcolor}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{soul}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage[neveradjust]{paralist}
 \usepackage[shortlabels]{enumitem}
 \usepackage{bbm}
@@ -135,7 +137,7 @@
 
 \titleformat{\section}{\color{myorange}\sffamily\normalsize}{\thesection}{0.5em}{}
 \titleformat{\subsection}[runin]{\color{myorange2}\sffamily\small}{\thesubsection}{0.5em}{}
-\titleformat{\subsubsection}[runin]{\color{DarkOrchid}\sffamily\small}{\thesubsubsection}{0.5em}{}
+\titleformat{\subsubsection}[runin]{\color{violet}\sffamily\small}{\thesubsubsection}{0.5em}{}
 
 \titlespacing*{\section}
 {0pt}{0.3em}{0em}
@@ -164,6 +166,136 @@ are not allowed to be used as a part of a cheat sheet during the exam.
 
 \newpage
 \setlength{\columnseprule}{0.1pt}
+\section{CNN} $T$ is linear if $T(\alpha \vu + \beta \vv) = \alpha T(\vu) + \beta T(\vv)$,
+invariant to $f$ if $T(f(\vu)) = T(\vu)$,
+equivariant to $f$ if $T(f(\vu)) = f(T(\vu))$.
+Any linear shift-equivariant $T$ can be written as a convolution.
+Convolution:
+$I'(i, j) = \sum_{m =- k}^k \sum_{n =- k}^k K(\textcolor{red}{-}m, \textcolor{red}{-}n)I(m + i, n + j)$.
+Correlation:
+$I'(i, j) = \sum_{m =- k}^k \sum_{n =- k}^k K(m, n)I(m + i, n + j)$.
+Conv. forward: $z^{(l)} = w^{(l)} * z^{(l - 1)} + b^{(l)} = \sum_m \sum_n w_{m, n}^{(l)} z_{i - m, j - n}^{(l - 1)} + b^{(l)}$.
+Backward inputs: $\delta^{(l - 1)} = \pdv{C}{z_{i,j}^{(l - 1)}} = \delta^{(l)} * \mathrm{ROT}_{180}(w^{(l)})$,
+backward kernel: $\pdv{C}{w_{m, n}^{(l)}} = \delta^{(l)} * \mathrm{ROT}_{180}(z^{(l - 1)})$.
+Width or height after conv or pool: $(\mathrm{in} + 2 \cdot \mathrm{pad} - \mathrm{dil} \cdot (\mathrm{kern} - 1) - 1) / \mathrm{stride} + 1$,
+rounded down.
+Channels = number of kernels.
+
+1D conv as matmul:
+\(\begin{bmatrix}
+    k_1 & 0 & \dots & 0 \\
+    k_2 & k_1 &  & \vdots \\
+    k_3 & k_2 & k_1 & 0 \\
+    0 & k_3 & k_2 & 0 \\
+    \vdots & \vdots & \ddots & \vdots \\
+\end{bmatrix}\)
+
+Backprop example (\textcolor{red}{rotate $\mK$}):
+\[
+    \stackrel{\begin{bmatrix}
+        0 & 0 & 1 & 1 & 0 \\
+        0 & 1 & 0 & 1 & 1 \\
+        1 & 1 & 1 & 1 & 0 \\
+        1 & 0 & 1 & 1 & 0 \\
+        1 & 1 & 0 & 1 & 1
+    \end{bmatrix}}{\mX} \to
+    \stackrel{\begin{bmatrix}
+        1 & 0 & 1 \\
+        0 & 1 & 0 \\
+        0 & 1 & 0 
+    \end{bmatrix}}{\mK} \to
+    \stackrel{\begin{bmatrix}
+        3 & 3 & 3 \\
+        4 & 2 & 3 \\
+        2 & 3 & 3 
+    \end{bmatrix}}{\mY = \mX * \mK} \to
+\]
+\[
+    \to\stackrel{\begin{bmatrix}
+        4
+    \end{bmatrix}}{\mY' = \mathrm{Pool}(\mY)}
+    \sep
+    \stackrel{\begin{bmatrix}
+        1
+    \end{bmatrix}}{\partial E / \partial \mY'} \to
+    \stackrel{\begin{bmatrix}
+        0 & 0 & 0 \\
+        1 & 0 & 0 \\
+        0 & 0 & 0 \\
+    \end{bmatrix}}{\partial E / \partial \mY} \to
+\]
+\[
+    \to\stackrel{\begin{bmatrix}
+        1 & 0 & 1 \\
+        1 & 1 & 1 \\
+        0 & 1 & 0 \\
+    \end{bmatrix}}{\partial E / \partial \mK} \to
+    \stackrel{\begin{bmatrix}
+        0 & 0 & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0 & 0 \\
+        1 & 0 & 1 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 0
+    \end{bmatrix}}{\partial E / \partial \mV}
+\]
+
+Max-pooling: $z^{(l)} = \max z_i^{(l - 1)}$. $i^* \coloneqq \argmax_i z_i^{(l - 1)}$,
+$\pdv{z^{(l)}}{z_i^{(l - 1)}} = [i = i^*]$, $\delta^{(l - 1)} = \delta^{(l)}_{i^*}$.
+Unpooling: nearest-neighbor (duplicate), bed of nails (only top left, rest 0), max-unpooling (remember where max came from when pooling).
+Learnable upsampling: transposed conv, output is copies of filter weighted by input, summed on overlaps.
+
+\section{RNN}
+
+\textbf{Vanilla \textsc{rnn}}: $\hat{y}_t = \mW_{hy} \vh_t, \vh_t = f(\vh_{t-1}, \vx_t, \mW)$
+, usually $\vh_t = \tanh(\mW_{hh} \vh_{t-1} + \mW_{xh}\vx_t)$.
+
+\textbf{BPTT}: $\pdv{L}{\mW} = \sum_t \pdv{L_t}{\mW}$, treat unrolled model as multi-layer.
+$\pdv{L_t}{W}$ has a term of $\pdv{\vh_t}{\vh_k} = \prod_{i = k + 1}^t \pdv{\vh_i}{\vh_{i-1}}
+= \prod_{i = k + 1}^t \mW_{hh}\tran \diag f'(\vh_{i-1})$.
+
+\textbf{Exploding/vanishing gradients}: $\vh_t = \mW^t \vh_1$.
+If $\mW$ is diagonaliz., $\mW = \mQ \diag \bm\lambda \mQ\tran = \mQ \bm\Lambda \mQ\tran, \mQ \mQ\tran = \mI
+\Rightarrow \vh_t = (\mQ\bm\Lambda \mQ\tran)^t \vh_1 = (\mQ (\diag \bm\lambda)^t \mQ\tran) \vh_1$
+$\Rightarrow \vh_t$ becomes the dominant eigenvector of $\mW$.
+$\pdv{\vh_t}{\vh_k}$ has this issue.
+Long-term contributions vanish, too sensitive to recent distrations.
+\textbf{Truncated BPTT}: take the sum only over the last $\kappa$ steps.
+\textbf{Gradient clipping} $\frac{\mathrm{threshold}}{\norm{\nabla}} \nabla$ fights exploding gradients.
+
+
+\subsection{LSTM}
+We want constant error flow, not multiplied by $W^t$.
+\begin{itemize}
+    \item Input gate: which values to write,
+    \item forget gate: which values to reset,
+    \item output gate: which values to read,
+    \item gate: candidate values to write to state.
+\end{itemize}
+
+\begin{minipage}{0.3\linewidth}
+    \begin{align*}
+        \begin{pmatrix}
+            \vi \\
+            \vf \\
+            \vo \\
+            \vg
+        \end{pmatrix} & = \begin{pmatrix}
+            \sigma \\
+            \sigma \\
+            \sigma \\
+            \tanh
+        \end{pmatrix} W \begin{pmatrix}
+            \vx_t \\
+            \vh_{t-1}
+        \end{pmatrix} \\
+        \vc_t & = \vf \odot \vc_{t-1} + \vi \odot \vg \\
+        \vh_t & = \vo \odot \tanh(\vc_t)
+    \end{align*}
+\end{minipage}%
+% \begin{minipage}{0.4\linewidth}
+%     \includesvg[width=\textwidth]{figures/LSTM.svg}
+% \end{minipage}
+
 
 \section{Generative modelling}
 
@@ -333,11 +465,11 @@ $p_x(x) = p_z(f^{-1}(x)) \prod_k \abs{\det \pdv{f_k^{-1}(x)}{x}}$.
 
 Sample $z \sim p_z$ and get $x = f(z)$.
 
-\includesvg[width=\linewidth]{figures/flow.svg}
+% \includesvg[width=\linewidth]{figures/flow.svg}
 
-\begin{wrapfigure}{R}{0.2\linewidth}
-    \includesvg[width=\linewidth]{figures/flow-block.svg}
-\end{wrapfigure}
+% \begin{wrapfigure}{R}{0.2\linewidth}
+%     \includesvg[width=\linewidth]{figures/flow-block.svg}
+% \end{wrapfigure}
 \textbullet\ Squeeze: reshape, increase chan.
 
 \textbullet\ ActNorm: batchnorm with init. s.t. output $\sim \mathcal{N}(0, \mI)$ for first minibatch.
@@ -620,7 +752,7 @@ needs expensive mocap.
 
 \textbf{SFV}: use pose estimation: videos $\to$ train data.
 
-\includesvg[pretex=\footnotesize, width=\linewidth]{figures/rl.svg}
+% \includesvg[pretex=\footnotesize, width=\linewidth]{figures/rl.svg}
 
 \section{Neural Implicit Representations}
 
@@ -695,7 +827,13 @@ Rasterization: for each pixel sort Gaussians by depth, opacity
 $\alpha = o \cdot \exp( - 0.5(x - \mu')\tran \Sigma'{}^{-1}(x - \mu'))$,
 rest same as NeRF.
 
-\includesvg[width=\linewidth]{figures/splatting.svg}
+Each Gaussian primitive has a center $\mu \in \R^3$, a covariance $\Sigma \in \R^{3\times 3}$, and a color $c \in \R^3$ and an opaciti $o \in \R$.
+
+To model view-dependent color, the color can be replaced with spherical harmonics, i.e. $c \in \R^9$
+
+To keep covariance semi-definite: $\Sigma = RSS^\top R^\top$, where $S \in \R^{3\times 3}$ is a diagonal scaling matrix and $R \in \R^{3\times 3}$ is a rotation matrix.
+
+% \includesvg[width=\linewidth]{figures/splatting.svg}
 
 \section{Parametric body models}
 
@@ -805,138 +943,7 @@ unbias:
 $\hat{\vm} = \vm / (1 - \beta_1^t), \hat{\vv} = \vv / (1 - \beta_2^t)$,
 $\Delta \theta =- \frac{\eta}{\sqrt{\hat{\vv}} + \epsilon}\hat{\vm}$.
 
-\section{CNN} $T$ is linear if $T(\alpha \vu + \beta \vv) = \alpha T(\vu) + \beta T(\vv)$,
-invariant to $f$ if $T(f(\vu)) = T(\vu)$,
-equivariant to $f$ if $T(f(\vu)) = f(T(\vu))$.
-Any linear shift-equivariant $T$ can be written as a convolution.
-Convolution:
-$I'(i, j) = \sum_{m =- k}^k \sum_{n =- k}^k K(\textcolor{red}{-}m, \textcolor{red}{-}n)I(m + i, n + j)$.
-Correlation:
-$I'(i, j) = \sum_{m =- k}^k \sum_{n =- k}^k K(m, n)I(m + i, n + j)$.
-Conv. forward: $z^{(l)} = w^{(l)} * z^{(l - 1)} + b^{(l)} = \sum_m \sum_n w_{m, n}^{(l)} z_{i - m, j - n}^{(l - 1)} + b^{(l)}$.
-Backward inputs: $\delta^{(l - 1)} = \pdv{C}{z_{i,j}^{(l - 1)}} = \delta^{(l)} * \mathrm{ROT}_{180}(w^{(l)})$,
-backward kernel: $\pdv{C}{w_{m, n}^{(l)}} = \delta^{(l)} * \mathrm{ROT}_{180}(z^{(l - 1)})$.
-Width or height after conv or pool: $(\mathrm{in} + 2 \cdot \mathrm{pad} - \mathrm{dil} \cdot (\mathrm{kern} - 1) - 1) / \mathrm{stride} + 1$,
-rounded down.
-Channels = number of kernels.
 
-1D conv as matmul:
-\(\begin{bmatrix}
-    k_1 & 0 & \dots & 0 \\
-    k_2 & k_1 &  & \vdots \\
-    k_3 & k_2 & k_1 & 0 \\
-    0 & k_3 & k_2 & 0 \\
-    \vdots & \vdots & \ddots & \vdots \\
-\end{bmatrix}\)
-
-Backprop example (\textcolor{red}{rotate $\mK$}):
-\[
-    \stackrel{\begin{bmatrix}
-        0 & 0 & 1 & 1 & 0 \\
-        0 & 1 & 0 & 1 & 1 \\
-        1 & 1 & 1 & 1 & 0 \\
-        1 & 0 & 1 & 1 & 0 \\
-        1 & 1 & 0 & 1 & 1
-    \end{bmatrix}}{\mX} \to
-    \stackrel{\begin{bmatrix}
-        1 & 0 & 1 \\
-        0 & 1 & 0 \\
-        0 & 1 & 0 
-    \end{bmatrix}}{\mK} \to
-    \stackrel{\begin{bmatrix}
-        3 & 3 & 3 \\
-        4 & 2 & 3 \\
-        2 & 3 & 3 
-    \end{bmatrix}}{\mY = \mX * \mK} \to
-\]
-\[
-    \to\stackrel{\begin{bmatrix}
-        4
-    \end{bmatrix}}{\mY' = \mathrm{Pool}(\mY)}
-    \sep
-    \stackrel{\begin{bmatrix}
-        1
-    \end{bmatrix}}{\partial E / \partial \mY'} \to
-    \stackrel{\begin{bmatrix}
-        0 & 0 & 0 \\
-        1 & 0 & 0 \\
-        0 & 0 & 0 \\
-    \end{bmatrix}}{\partial E / \partial \mY} \to
-\]
-\[
-    \to\stackrel{\begin{bmatrix}
-        1 & 0 & 1 \\
-        1 & 1 & 1 \\
-        0 & 1 & 0 \\
-    \end{bmatrix}}{\partial E / \partial \mK} \to
-    \stackrel{\begin{bmatrix}
-        0 & 0 & 0 & 0 & 0 \\
-        0 & 1 & 0 & 0 & 0 \\
-        0 & 1 & 0 & 0 & 0 \\
-        1 & 0 & 1 & 0 & 0 \\
-        0 & 0 & 0 & 0 & 0
-    \end{bmatrix}}{\partial E / \partial \mV}
-\]
-
-Max-pooling: $z^{(l)} = \max z_i^{(l - 1)}$. $i^* \coloneqq \argmax_i z_i^{(l - 1)}$,
-$\pdv{z^{(l)}}{z_i^{(l - 1)}} = [i = i^*]$, $\delta^{(l - 1)} = \delta^{(l)}_{i^*}$.
-Unpooling: nearest-neighbor (duplicate), bed of nails (only top left, rest 0), max-unpooling (remember where max came from when pooling).
-Learnable upsampling: transposed conv, output is copies of filter weighted by input, summed on overlaps.
-
-\section{RNN}
-
-\textbf{Vanilla \textsc{rnn}}: $\hat{y}_t = \mW_{hy} \vh_t, \vh_t = f(\vh_{t-1}, \vx_t, \mW)$
-, usually $\vh_t = \tanh(\mW_{hh} \vh_{t-1} + \mW_{xh}\vx_t)$.
-
-\textbf{BPTT}: $\pdv{L}{\mW} = \sum_t \pdv{L_t}{\mW}$, treat unrolled model as multi-layer.
-$\pdv{L_t}{W}$ has a term of $\pdv{\vh_t}{\vh_k} = \prod_{i = k + 1}^t \pdv{\vh_i}{\vh_{i-1}}
-= \prod_{i = k + 1}^t \mW_{hh}\tran \diag f'(\vh_{i-1})$.
-
-\textbf{Exploding/vanishing gradients}: $\vh_t = \mW^t \vh_1$.
-If $\mW$ is diagonaliz., $\mW = \mQ \diag \bm\lambda \mQ\tran = \mQ \bm\Lambda \mQ\tran, \mQ \mQ\tran = \mI
-\Rightarrow \vh_t = (\mQ\bm\Lambda \mQ\tran)^t \vh_1 = (\mQ (\diag \bm\lambda)^t \mQ\tran) \vh_1$
-$\Rightarrow \vh_t$ becomes the dominant eigenvector of $\mW$.
-$\pdv{\vh_t}{\vh_k}$ has this issue.
-Long-term contributions vanish, too sensitive to recent distrations.
-\textbf{Truncated BPTT}: take the sum only over the last $\kappa$ steps.
-\textbf{Gradient clipping} $\frac{\mathrm{threshold}}{\norm{\nabla}} \nabla$ fights exploding gradients.
-
-\end{multicols*}
-
-\begin{multicols*}{3}
-
-\subsection{LSTM}
-We want constant error flow, not multiplied by $W^t$.
-\begin{itemize}
-    \item Input gate: which values to write,
-    \item forget gate: which values to reset,
-    \item output gate: which values to read,
-    \item gate: candidate values to write to state.
-\end{itemize}
-
-\begin{minipage}{0.3\linewidth}
-    \begin{align*}
-        \begin{pmatrix}
-            \vi \\
-            \vf \\
-            \vo \\
-            \vg
-        \end{pmatrix} & = \begin{pmatrix}
-            \sigma \\
-            \sigma \\
-            \sigma \\
-            \tanh
-        \end{pmatrix} W \begin{pmatrix}
-            \vx_t \\
-            \vh_{t-1}
-        \end{pmatrix} \\
-        \vc_t & = \vf \odot \vc_{t-1} + \vi \odot \vg \\
-        \vh_t & = \vo \odot \tanh(\vc_t)
-    \end{align*}
-\end{minipage}%
-\begin{minipage}{0.4\linewidth}
-    \includesvg[width=\textwidth]{figures/LSTM.svg}
-\end{minipage}
 
 \section{Proofs}
 
@@ -1012,7 +1019,6 @@ for $a, b > 0 \Rightarrow $ max. at $\frac{a}{a + b}$ $\Rightarrow$ $D^* = \frac
 \!=\! \E_{p(\epsilon)}\! \nabla_\varphi f(g(\epsilon, \varphi))$
 
 \subsection*{$q(x_t \mid x_0)$}
-
 $\vx_t = \sqrt{1 - \beta_t} \vx_{t-1} + \sqrt{\beta_t} \epsilon
 = \sqrt{\alpha_t} \vx_{t-1} + \sqrt{1 - \alpha_t} \epsilon
 = \sqrt{\alpha_t \alpha_{t - 1}} \vx_{t-2} + \sqrt{1 - \alpha_t \alpha_{t - 1}} \epsilon
@@ -1080,6 +1086,11 @@ subst. any point to find $k$.
 \subsection*{Torus equation}
 
 \!\!\!\!$(\sqrt{x^2 + y^2} - R)^2 + z^2 = r^2$, cent. $0$, around $z$ axis.
+
+\subsection*{Chain rule}
+$\pdv{z_k}{x_j} = \sum_{i=1}^{m} \pdv{z_k}{y_i} \pdv{y_i}{x_j} \sep$
+$\pdv{z}{x} = \pdv{z}{y} \pdv{y}{x}$
+
 
 \subsection*{Derivatives}
 
