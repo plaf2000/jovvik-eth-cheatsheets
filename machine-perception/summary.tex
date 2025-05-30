@@ -244,6 +244,12 @@ $\pdv{z^{(l)}}{z_i^{(l - 1)}} = [i = i^*]$, $\delta^{(l - 1)} = \delta^{(l)}_{i^
 Unpooling: nearest-neighbor (duplicate), bed of nails (only top left, rest 0), max-unpooling (remember where max came from when pooling).
 Learnable upsampling: transposed conv, output is copies of filter weighted by input, summed on overlaps.
 
+\textbf{Sizes}
+input: $(C_{in}, H_{in}, W_{in})$, output: $(C_{out}, H_{out}, W_{out})$.
+Kernel: $k_1 \times k_2$, padding: $p_1 \times p_2$, stride: $s_1 \times s_2$, dilation: $d_1 \times d_2$.
+$H_{out} = (H_{in} + 2p_1 - d_1(k_1 - 1) - 1) s^{-1}_1 + 1$,
+$W_{out} = (W_{in} + 2p_2 - d_2(k_2 - 1) - 1) s^{-1}_2 + 1$.
+
 \section{RNN}
 
 \textbf{Vanilla \textsc{rnn}}: $\hat{y}_t = \mW_{hy} \vh_t, \vh_t = f(\vh_{t-1}, \vx_t, \mW)$
@@ -532,20 +538,21 @@ These assumptions are too strong.
 If $D$ is too strong, $G$ has near zero gradients and doesn't learn ($\log'(1 - D(G(z))) \approx 0$).
 Use gradient \underline{ascent} on $\log(D(G(z)))$ instead.
 
-Model collapse: $G$ only produces one sample or one class of samples.
+\textbf{Mode collapse}: $G$ only produces one sample or one class of samples.
 Solution: \textbf{unrolling} --- use $k$ previous $D$ for each $G$ update.
 
 GANs are hard to compare, as likelihood is intractable.
 FID is a metric that calculates the distance between feature vectors
 calculated for real and generated images.
 
-DCGAN: pool $\to$ strided convolution, batchnorm, no FC, ReLU for $G$, LeakyReLU for $D$.
+%DCGAN: pool $\to$ strided convolution, batchnorm, no FC, ReLU for $G$, LeakyReLU for $D$.
 
-Wasserstein GAN: different loss, gradients don't vanish.
+%Wasserstein GAN: different loss, gradients don't vanish.
 Adding gradient penalty for $D$ stabilizes training.
-Hierarchical GAN: generate low-res image, then high-res during training.
-StyleGAN: learn intermediate latent space $\mathcal{W}$ with FCs,
-batchnorm with scale and mean from $\mathcal{W}$, add noise at each layer.
+\textbf{Profressive Growing} GAN: generate low-res image, then high-res during training.
+\textbf{AdaIN}: Similar to attention. $c' = \gamma(s) \odot \frac{c - \mu (c)}{\sigma(c)} + \beta(s)$, where $c$ is the content, $s$ is the style.
+\textbf{StyleGAN}: learn intermediate latent space $\mathcal{W}$ with FCs,
+batchnorm with scale and mean from $\mathcal{W}$, add noise at each layer using AdaIn.
 
 GAN \textbf{inversion}: find $z$ s.t. $G(z) \approx x$ $ \Rightarrow $ manipulate images in latent space, inpainting.
 If $G$ predicts image and segmentation mask,
@@ -1122,7 +1129,7 @@ $p_\theta(\vz) = \prod_{t = 1}^T p_\theta(z_t \mid \vz_{ < t}, \vx_{ < t})$,
 
 $q_\phi(\vx \mid \vz) = \prod_{t = 1}^T q_\phi(z_t \mid \vx_{ \leq t}, \vz_{ < t})$,
 
-$p_\theta(\vx, \vz) = \prod_{t = 1}^T p_\theta(x_t \mid \vz_{ \leq t}, \vz_{ < t})p_\theta(z_t \mid \vz_{ < t}, \vx_{ < t})$.
+$p_\theta(\vx, \vz) = \prod_{t = 1}^T p_\theta(x_t \mid \vz_{ \leq t}, \vx_{ < t})p_\theta(z_t \mid \vz_{ < t}, \vx_{ < t})$.
 
 \subsection*{Misc}
 A \textbf{translation vector} is added.
