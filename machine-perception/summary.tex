@@ -298,9 +298,9 @@ We want constant error flow, not multiplied by $W^t$.
         \vh_t & = \vo \odot \tanh(\vc_t)
     \end{align*}
 \end{minipage}%
-% \begin{minipage}{0.4\linewidth}
-%     \includesvg[width=\textwidth]{figures/LSTM.svg}
-% \end{minipage}
+\begin{minipage}{0.4\linewidth}
+    \includesvg[width=\textwidth]{figures/LSTM.svg}
+\end{minipage}
 
 
 \section{Generative modelling}
@@ -433,84 +433,6 @@ Multi-head attn. splits $W$ into $h$ heads, then concatenates them.
 Positional encoding injects information about the position of the token.
 Attn. is $\mathcal{O}(T^2 D)$.
 
-\section{Normalizing Flows}
-
-VAs dont have a tractable likelihood, AR models have no latent space.
-Want both.
-Change of variable for $x = f(z)$:
-$p_x(x) = p_z(f^{-1}(x)) \abs{\det \pdv{f^{-1}(x)}{x}} = p_z(f^{-1}(x)) \abs{\det \pdv{f(z)}{z}}^{-1}$.
-Map $Z \to X$ with a deterministic invertible $f_\theta$.
-This can be a NN, but computing the determinant is $\mathcal{O}(n^3)$.
-If the Jacobian is triangular, the determinant is $\mathcal{O}(n)$.
-To do this, add a coupling layer:
-\begin{minipage}{0.5\linewidth}
-    \[\begin{pmatrix}
-        y^A \\
-        y^B
-    \end{pmatrix} = \begin{pmatrix}
-        h(x^A, \beta(x^B)) \\
-        x^B
-    \end{pmatrix}\]
-\end{minipage}%
-\hspace{0.3cm}%
-\begin{minipage}{0.45\linewidth}
-    , where $\beta$ is any model, and $h$ is elementwise.
-\end{minipage}
-\[\begin{pmatrix}
-    x^A \\
-    x^B
-\end{pmatrix} = \begin{pmatrix}
-    h^{-1}(y^A, \beta(y^B)) \\
-    y^B
-\end{pmatrix}, J = \begin{pmatrix}
-    h' & h'\beta' \\
-    0 & 1
-\end{pmatrix}\]
-Stack these for expressivity, $f = f_k \circ \dots f_1$.
-$p_x(x) = p_z(f^{-1}(x)) \prod_k \abs{\det \pdv{f_k^{-1}(x)}{x}}$.
-
-Sample $z \sim p_z$ and get $x = f(z)$.
-
-% \includesvg[width=\linewidth]{figures/flow.svg}
-
-% \begin{wrapfigure}{R}{0.2\linewidth}
-%     \includesvg[width=\linewidth]{figures/flow-block.svg}
-% \end{wrapfigure}
-\textbullet\ Squeeze: reshape, increase chan.
-
-\textbullet\ ActNorm: batchnorm with init. s.t. output $\sim \mathcal{N}(0, \mI)$ for first minibatch.
-    $\vy_{i,j} = \vs \odot \vx_{i,j} + \vb$,
-    $\vx_{i, j} = (\vy_{i,j} - \vb) / \vs$,
-    $\log\det = H \cdot W \cdot \sum_i \log \abs{\vs_i}$: linear.
-
-\textbullet\ $1 \times 1$ conv: permutation along channel dim.
-    Init $\mW$ as rand. ortogonal $\in \R^{C \times C}$ with $\det\mW = 1$.
-    $\log\det = H \cdot W \cdot \log\abs{\det\mW}$: $\mathcal{O}(C^3)$.
-    Faster: $\mW \coloneqq \mP \mL(\mU + \diag(s))$,
-    where $\mP$ is a random \underline{fixed} permut. matrix,
-    $\mL$ is lower triang. with 1s on diag.,
-    $\mU$ is upper triang. with 0s on diag.,
-    $\vs$ is a vector.
-    Then $\log\det = \sum_i \log \abs{\vs_i}$: $\mathcal{O}(C)$
-Conditional coupling: add parameter $\vw$ to $\beta$.
-
-\textbf{SRFlow}: use flows to generate many high-res images from a low-res one.
-Adds affine injector between conv. and coupling layers.
-$\vh^{n+1} = \exp(\beta^n_{\theta, s}(\vu)) \cdot \vh^n + \beta_{\theta, b}(\vu)$,
-$\vh^n = \exp( - \beta^n_{\theta, s}(\vu)) \cdot (\vh^{n+1} - \beta^n_{\theta, b}(\vu))$,
-$\log\det = \sum_{i,j,k} \beta^n_{\theta, s}(\vu_{i, j, k})$.
-
-\textbf{StyleFlow}: Take StyleGAN and replace the network $\vz \to \vw$ (aux. latent space)
-with a normalizing flow conditioned on attributes.
-
-\textbf{C-Flow}: condition on other normalizing flows: multimodal flows.
-Encode original image $\vx_B^1$: $\vz_B^1 = f^{-1}_\phi(\vx_B^1 \mid \vx_A^1)$;
-encode extra info (image, segm. map, etc.) $\vx_A^2$: $\vz_A^2 = g^{-1}_\theta(\vx_A^2)$;
-generate new image $\vx_B^2$: $\vx_B^2 = f_\phi(\vz_B^1 \mid \vz_A^2)$.
-
-Flows are expensive for training and low res.
-The latent distr. of a flow needn't be $\mathcal{N}$.
-
 \section{Generative Adversarial Networks (GANs)}
 
 Log-likelihood is not a good metric. We can have high likelihood with poor quality by mixing in noise and not losing much likelihood; or low likelihood with good quality by remembering input data and having sharp peaks there.
@@ -589,6 +511,85 @@ BicycleGAN: add noise input.
 
 Vid2vid: video translation.
 
+\section{Normalizing Flows}
+
+VAs dont have a tractable likelihood, AR models have no latent space.
+Want both.
+Change of variable for $x = f(z)$:
+$p_x(x) = p_z(f^{-1}(x)) \abs{\det \pdv{f^{-1}(x)}{x}} = p_z(f^{-1}(x)) \abs{\det \pdv{f(z)}{z}}^{-1}$.
+Map $Z \to X$ with a deterministic invertible $f_\theta$.
+This can be a NN, but computing the determinant is $\mathcal{O}(n^3)$.
+If the Jacobian is triangular, the determinant is $\mathcal{O}(n)$.
+To do this, add a coupling layer:
+\begin{minipage}{0.5\linewidth}
+    \[\begin{pmatrix}
+        y^A \\
+        y^B
+    \end{pmatrix} = \begin{pmatrix}
+        h(x^A, \beta(x^B)) \\
+        x^B
+    \end{pmatrix}\]
+\end{minipage}%
+\hspace{0.3cm}%
+\begin{minipage}{0.45\linewidth}
+    , where $\beta$ is any model, and $h$ is elementwise.
+\end{minipage}
+\[\begin{pmatrix}
+    x^A \\
+    x^B
+\end{pmatrix} = \begin{pmatrix}
+    h^{-1}(y^A, \beta(y^B)) \\
+    y^B
+\end{pmatrix}, J = \begin{pmatrix}
+    h' & h'\beta' \\
+    0 & 1
+\end{pmatrix}\]
+Stack these for expressivity, $f = f_k \circ \dots f_1$.
+$p_x(x) = p_z(f^{-1}(x)) \prod_k \abs{\det \pdv{f_k^{-1}(x)}{x}}$.
+
+Sample $z \sim p_z$ and get $x = f(z)$.
+
+\includesvg[width=\linewidth]{figures/flow.svg}
+
+\begin{wrapfigure}{R}{0.2\linewidth}
+    \includesvg[width=\linewidth]{figures/flow-block.svg}
+\end{wrapfigure}
+\textbullet\ Squeeze: reshape, increase chan.
+
+\textbullet\ ActNorm: batchnorm with init. s.t. output $\sim \mathcal{N}(0, \mI)$ for first minibatch.
+    $\vy_{i,j} = \vs \odot \vx_{i,j} + \vb$,
+    $\vx_{i, j} = (\vy_{i,j} - \vb) / \vs$,
+    $\log\det = H \cdot W \cdot \sum_i \log \abs{\vs_i}$: linear.
+
+\textbullet\ $1 \times 1$ conv: permutation along channel dim.
+    Init $\mW$ as rand. ortogonal $\in \R^{C \times C}$ with $\det\mW = 1$.
+    $\log\det = H \cdot W \cdot \log\abs{\det\mW}$: $\mathcal{O}(C^3)$.
+    Faster: $\mW \coloneqq \mP \mL(\mU + \diag(s))$,
+    where $\mP$ is a random \underline{fixed} permut. matrix,
+    $\mL$ is lower triang. with 1s on diag.,
+    $\mU$ is upper triang. with 0s on diag.,
+    $\vs$ is a vector.
+    Then $\log\det = \sum_i \log \abs{\vs_i}$: $\mathcal{O}(C)$
+Conditional coupling: add parameter $\vw$ to $\beta$.
+
+\textbf{SRFlow}: use flows to generate many high-res images from a low-res one.
+Adds affine injector between conv. and coupling layers.
+$\vh^{n+1} = \exp(\beta^n_{\theta, s}(\vu)) \cdot \vh^n + \beta_{\theta, b}(\vu)$,
+$\vh^n = \exp( - \beta^n_{\theta, s}(\vu)) \cdot (\vh^{n+1} - \beta^n_{\theta, b}(\vu))$,
+$\log\det = \sum_{i,j,k} \beta^n_{\theta, s}(\vu_{i, j, k})$, where $\vu = g_\Theta(x)$ is the low res image.
+
+\textbf{StyleFlow}: Take StyleGAN and replace the network $\vz \to \vw$ (aux. latent space)
+with a normalizing flow conditioned on attributes generated from the image.
+
+\textbf{C-Flow}: condition on other normalizing flows: multimodal flows.
+Encode original image $\vx_B^1$: $\vz_B^1 = f^{-1}_\phi(\vx_B^1 \mid \vx_A^1)$;
+encode extra info (image, segm. map, etc.) $\vx_A^2$: $\vz_A^2 = g^{-1}_\theta(\vx_A^2)$;
+generate new image $\vx_B^2$: $\vx_B^2 = f_\phi(\vz_B^1 \mid \vz_A^2)$.
+
+Flows are expensive for training and low res.
+The latent distr. of a flow needn't be $\mathcal{N}$.
+
+
 \section{Diffusion models}
 
 High quality generations, better diversity, more stable/scalable.
@@ -643,7 +644,8 @@ $t$ can be continuious.
 
 Add input $y$ to the model.
 
-\textbf{ControlNet}: don't retrain model, add layers that add something to block outputs.
+\textbf{ControlNet}: don't retrain model, add layers that add something to block outputs. 
+Use zero convolution to start with zero conditioning.
 
 (Classifier-free) \textbf{guidance}: mix predictions of a conditional and unconditional model,
 because conditional models are not diverse.
@@ -654,113 +656,22 @@ $\eta_{\theta_1}(x, c; t) = (1 + \rho)\eta_{\theta_1}(x, c; t) - \rho \eta_{\the
 High-res images are expensive to model.
 Predict in latent space, decode with a decoder.
 
-\section{Reinforcement learning}
-
-Environment is a Markov Decision Process:
-states $S$, actions $A$,
-reward $r : S \times A \to \R$,
-transition $p: S \times A \to S$,
-initial $s_0 \in S$,
-discount factor $\gamma$.
-$r$ and $p$ are deterministic, can be a distribution.
-Learn policy $\pi : S \to A$.
-Value $V_\pi: S \to \R$, the reward from $s$ under $\pi$.
-\textbf{Bellman eq.}: $G_t \coloneqq \sum_{k = 0}^\infty \gamma^k R_{t + k + 1},$
-$v_\pi(s) \coloneqq \E_\pi[G_t \mid S_t = s]
-= \E_\pi[R_{t+1} + \gamma G_{t+1} \mid S_t = s]
-= \sum_a \pi(a \mid s) \sum_{s'} \sum_r p(s', r \mid s, a)[r + \gamma \E_\pi[G_{t+1} \mid S_{t+1} = s']]
-= \sum_a \pi(a \mid s) \sum_{s', r} p(s', r \mid s, a)[r + \gamma v_\pi(s')]]$.
-Can be solved via dynamic programming (needs knowledge of $p$),
-Monte-Carlo or Temporal Difference learning.
-
-\subsection{Dynamic programming}
-
-Value iteration: compute optimal $v_*$, then $\pi_*$.
-
-Policy iteration: compute $v_\pi$ and $\pi$ together.
-
-For any $V_\pi$ the greedy policy (optimal) is
-$\pi'(s) = \argmax_{a \in A}(r(s, a) + \gamma V_\gamma(p(s, a)))$.
-
-\textbf{Bellman optimality}: $v_*(s) = \max_a q_*(s, a)
-= \max_a \sum_{s', r} p(s', r \mid s, a)[r + \gamma v_*(s')]$
-$ \Rightarrow $ update step:
-$V_{\mathrm{new}}^*(s) = \max_{a \in A} (r(s, a) + \gamma V_{\mathrm{old}}^*(s'))$,
-when $V_{\mathrm{old}}^* = V_{\mathrm{new}}^*$, we have optimal policy.
-
-Converges in finite steps, more efficient than policy iteration.
-But needs knowledge of $p$,
-iterates over all states and $\mathcal{O}(|S|)$ memory.
-
-\subsection{Monte Carlo sampling}
-
-Sample trajectories, estimate $v_\pi$ by averaging returns.
-Doesn't need full $p$, is unbiased,
-but high variance, exploration/exploitation dilemma, may not reach term. state.
-
-\subsection{Temporal Difference learning}
-
-For each $s \to s'$ by action $a$ update:
-$\Delta V(s) = r(s, a) + \gamma V(s') - V(s)$.
-\textbf{$\bm\varepsilon$-greedy policy}: with prob. $\varepsilon$ choose random action, else greedy.
-
-\subsection{Q-learning}
-
-$Q$-value f.: $q_\pi(s, a) \coloneqq \E_\pi[G_t \mid S_t = s, A_t = a]$.
-
-\textbf{SARSA} (on-policy):
-For each $S \to S'$ by action $A$ update:
-$\Delta Q(S, A) = r(S, A) + \gamma Q(S', A') - Q(S, A)$,
-$Q(S, A) {}+{}\!\!\!= \alpha \Delta Q(S, A)$,
-$\alpha$ is LR.
-
-\textbf{Q-learning} (off-policy/offline):
-$\Delta Q(S, A) = R_{t+1} + \gamma \max_a Q(S', a) - Q(S, A)$
-
-All these approaches do not approximate values of states that have not been visited.
-
-\subsection{Deep Q-learning}
-
-Use NN to predict $Q$-values.
-Loss is $(R + \gamma \max_{a'}Q_\theta(S', a') - Q_\theta(S, A))^2$,
-backprop only through $Q_\theta(S, A)$.
-Store history in replay buffer, sample from it for training $ \Rightarrow $ no correlation in samples.
-
-\subsection{Deep Q-networks}
-
-Encode state to low dimensionality with NN.
-
-\subsection{Policy gradients}
-
-$Q$-learning does not handle continuous action spaces.
-Learn a policy directly instead,
-$\pi(a_t \mid s_t) = \mathcal{N}(\mu_t, \sigma_t^2 \mid s_t)$.
-Sample trajectories: $p(\tau) = p(s_1, a_1, \dots, s_T, a_T) = p(s_1) \prod \pi(a_t \!\!\mid\!\! s_t) p(s_{t+1} \!\!\mid\!\! a_t, s_t)$.
-This is on-policy.
-
-Eval: $J(\theta) \coloneqq \E_{\tau \sim p_\theta(\tau)} [\sum_t \gamma^t r(s_t, a_t)]$.
-To optimize, need to compute $\E$ (see proofs).
-
-\textbf{REINFORCE}: MC sampling of $\tau$.
-To reduce variance, subtract baseline $b(s_t)$ from reward.
-
-\subsection{Actor-Critic}
-
-$\nabla_\theta J(\theta) = \frac{1}{N} \sum_i \sum_t \nabla \log \pi_\theta(a_t^i \mid s_t^i)(r(s_t^i, a_t^i) + \gamma V(s_{t+1}^i) - V(s_t^i)))$. $\pi$ = actor, $V$ = critic.
-Est. value with NN, not traj. rollouts.
-
-\subsection{Motion synthesis}
-
-\textbf{Data-driven:}
-bad perf. out of distribution,
-needs expensive mocap.
-
-\textbf{DeepMimic:} RL to imitate reference motions while satisfying task objectives.
-
-\textbf{SFV}: use pose estimation: videos $\to$ train data.
-
-% \includesvg[pretex=\footnotesize, width=\linewidth]{figures/rl.svg}
-
+\section{Foundation Models}
+\textbf{Foundation models} are large pre-trained models that can be adapted to many tasks.
+\textbf{First Generation}: Generalized Encoder + Task Decoder. Most Vision Models: ViT, MAE, SAM, CLIP, DINOv2. E.g. ELMO, BERT, ERNIE
+\textbf{Second Generation}: Generalized Encoder + Task Finetuning. Diffusion Models: DreamBooth, Zero-1-to-3, SiTH. E.g. GPT-3
+\textbf{Third Generation}: LLMs, can be prompted e.g. ChatGPT, LLaMa, Gemini, DeepSeek.
+\textbf{ViT}: Vision Transformer, image as sequence of patches, transformer encoder.
+\textbf{MAE}: Masked Autoencoder, encoder hallucinates missing patches, decoder reconstructs them.
+\textbf{Sapiens}: MAE with 4 heads: 2d keypoints, segmentation, depth and normals.
+\textbf{SAM}: Promptable segmentation. Supervised training. MAE + decoder conditioned on mask, points, box or text.
+\textbf{CLIP}: Contrastive Language-Image Pretraining. Image and text encoded separately, contrastive learning put them close.
+\textbf{DINOv2}: Self-supervised learning. Image encoder predicts image features from other images.
+\textbf{DINO}: Student teacher distillation. Teacher knows more, gets small correction from student.
+\textbf{4M}: Any-to-any multimodal model. Transformer encoder and decoder.
+\textbf{DreamBooth}: Fine-tune diffusion model on a few images of a subject, then use it to generate images of that subject.
+\textbf{Zero-1-to-3}: 3d reconstruction from single image. Condition on rotation and translation using CLIP embeddings.
+\textbf{SiTH}: Single Image to High-Res. Condition diffusion on 3D model.
 \section{Neural Implicit Representations}
 
 Voxels/volum. primitives are inefficient ($n^3$ compl.).
@@ -840,7 +751,7 @@ To model view-dependent color, the color can be replaced with spherical harmonic
 
 To keep covariance semi-definite: $\Sigma = RSS^\top R^\top$, where $S \in \R^{3\times 3}$ is a diagonal scaling matrix and $R \in \R^{3\times 3}$ is a rotation matrix.
 
-% \includesvg[width=\linewidth]{figures/splatting.svg}
+\includesvg[width=\linewidth]{figures/splatting.svg}
 
 \section{Parametric body models}
 
@@ -1031,28 +942,6 @@ $\vx_t = \sqrt{1 - \beta_t} \vx_{t-1} + \sqrt{\beta_t} \epsilon
 = \sqrt{\alpha_t \alpha_{t - 1}} \vx_{t-2} + \sqrt{1 - \alpha_t \alpha_{t - 1}} \epsilon
 = \dots = \sqrt{\overline{\alpha}_t} \vx_0 + \sqrt{1 - \overline{\alpha}_t} \epsilon$
 
-\subsection*{Bellman operator converges} Want to prove that value iteration converges to the optimal policy:
-$\lim_{k \to \infty} (T^*)^k(V) = V_*$,
-where $T^*(V) = \max_{a \in A} \sum_{s', r} p(s', r \mid s, a)(r(s, a) + \gamma V(s'))$.
-$T^*$ is a contraction mapping, i.e. $\max_{s \in S}|T^*(V_1(s)) - T^*(V_2(s))| \leq \gamma\max_{s \in S}|V_1(s) - V_2(s)|$:
-$\mathrm{LHS} \leq \max_{s, a}|\sum_{s', r} p(s', r \mid s, a)(r(s, a) + \gamma V_1(s')) - \sum_{s', r} p(s', r \mid s, a)(r(s, a) + \gamma V_2(s'))|
-= \gamma \max_{s, a}|\sum_{s', r} p(s', r \mid s, a)(V_1(s') - V_2(s')| = \mathrm{RHS}$.
-By the contraction th., $T^*$ has a unique fixed point, and we know $V^*$ is a FP of $T^*$.
-As $\gamma < 1$, $\mathrm{LHS}(V, V^*) \to 0$ and $T^*(V) \to V_*$.
-
-\subsection*{Policy gradients}
-\quad$J(\theta) = \E_{\tau \sim p(\tau)} [r(\tau)]
-= \int p(\tau) r(\tau) \dd \tau$.
-$\nabla_\theta J(\theta) = \int \nabla_\theta p(\tau) r(\tau) \dd \tau
-= \int p(\tau) \nabla_\theta \log p(\tau) r(\tau) \dd \tau
-= \E_{\tau \sim p(\tau)} [\nabla_\theta \log p(\tau) r(\tau)] = \E_{\tau \sim p(\tau)}[\nabla_\theta \log p(\tau) r(\tau)]$.
-
-$\log p(\tau) = \log[p(s_1)\prod \pi_\theta(a_t \mid s_t) p(s_{t+1} \mid a_t, s_t)]
-= 0 + \sum_t \log \pi_\theta(a_t \mid s_t) + 0$
-
-$\nabla_\theta J(\theta) = \E_{\tau \sim p(\tau)}
-[\textcolor{blue}{(\sum_t \nabla \log p_\theta(a_t^i \mid s_t^i)})\textcolor{purple}{(\sum_t \gamma^t r(s_t^i, a_t^i))}]$:
-\textcolor{blue}{max likelihood}, \textcolor{purple}{trajectory reward} scales the gradient.
 
 \subsection*{Implicit differentiation}
 
@@ -1109,10 +998,12 @@ $(\log x)' = 1 / x$.
 
 \subsection*{Linear algebra}
 
-$\det(\mA + \vu\vv\tran) = (1 + \vv\tran \mA^{-1}\vu) \det \mA$
+Matrix det lemma: $\det(\mA + \vu\vv\tran) = (1 + \vv\tran \mA^{-1}\vu) \det \mA$
 
 \subsection*{Jensen's inequality}
-$f(\E[X]) \leq \E[f(X)]$ and $f(tx_1 + (1 - t)x_2) \leq tf(x_1) + (1 - t)f(x_2)$ if $f$ is convex, i.e. $\forall t \in [0, 1], x_1, x_2 \in X : f(tx_1 + (1 - t)x_2) \leq tf(x_1) + (1 - t)f(x_2)$.
+$f(\E[X]) \leq \E[f(X)]$ if $f$ is convex, i.e. $\forall t \in [0, 1], x_1, x_2 \in X : f(tx_1 + (1 - t)x_2) \leq tf(x_1) + (1 - t)f(x_2)$.
+The opposite is true for concave functions (e.g. $\log$).
+
 
 \subsection*{Gaussians}
 
