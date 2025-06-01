@@ -152,20 +152,77 @@
 % \section*{Disclaimer}
 
 \begin{multicols*}{4}
-\setlength{\columnseprule}{0.0pt}
+% \setlength{\columnseprule}{0.0pt}
 
-This document is a summary of the \textit{Machine Perception} course at ETH Z\"urich.
-This summary was created during the spring semester of 2024.
-Due to updates to the syllabus content, some material may no longer be relevant for future versions of the course.
-I do not guarantee correctness or completeness, nor is this document endorsed by the lecturers.
-The order of the chapters is not necessarily the order in which they were presented in the course.
-For the full \LaTeX \ source code, visit \texttt{\href{https://github.com/Jovvik/eth-cheatsheets}{github.com/Jovvik/eth-cheatsheets}}.
+% This document is a summary of the \textit{Machine Perception} course at ETH Z\"urich.
+% This summary was created during the spring semester of 2024.
+% Due to updates to the syllabus content, some material may no longer be relevant for future versions of the course.
+% I do not guarantee correctness or completeness, nor is this document endorsed by the lecturers.
+% The order of the chapters is not necessarily the order in which they were presented in the course.
+% For the full \LaTeX \ source code, visit \texttt{\href{https://github.com/Jovvik/eth-cheatsheets}{github.com/Jovvik/eth-cheatsheets}}.
 
-All figures are created by the author, and, assuming the rules have not been changed,
-are not allowed to be used as a part of a cheat sheet during the exam.
+% All figures are created by the author, and, assuming the rules have not been changed,
+% are not allowed to be used as a part of a cheat sheet during the exam.
 
-\newpage
+% \newpage
 \setlength{\columnseprule}{0.1pt}
+\section{ML}
+
+Perceptron converges in finite time iff data is linearly separable.
+\textbf{MAP} $\theta^* \in \argmax p(\theta \mid X, y)$.
+\textbf{MLE} $\theta \in \argmax p(y \mid X, \theta)$ consistent, efficient.
+\textbf{Binary cross-entropy} $L(\theta) = - y_i \log(\hat{y}_i) - (1 - y_i) \log(1 - \hat{y}_i)$.
+Cross-entropy $H(p_d, p_m) = H(p_d) + \kl{p_d}{p_m}$.
+For any continuous $f$ $\exists \mathrm{NN}\ g(x), |g(x) - f(x)| < \varepsilon$.
+1 hidden layer is enough, activation function needs to be nonlinear.
+
+MLP backward inputs: $\delta^{(l)} = \delta^{(l + 1)} \cdot \pdv{\vz^{(l + 1)}}{\vz^{(l)}}$,
+backward weights: $\left[\pdv{\vz^{(l)}}{\vw_{ij}^{(l)}}\right]_k = f'(\va)_k \cdot z_j^{(l)} \cdot [k = i],
+\pdv{L}{\vz^{(l)}}{\vz^{(l)}} = \delta^{(l)} \pdv{\vz^{(l)}}{\vw_{i,j}^{(l)}}$,
+backward bias: $\pdv{L}{\vb_i^{(l)}} =$ same, but no $\vz$.
+
+\subsection{Activation functions} \phantom{a}
+
+% \renewcommand{\arraystretch}{0}
+\begin{tabular}[]{@{}c@{}ccc@{}}
+    \toprule
+    name & $f(x)$ & $f'(x)$ & $f(X)$ \\
+    \midrule
+    sigmoid & $\frac{1}{1 + e^{-x}}$ & $\sigma(x)(1 - \sigma(x))$ & $(0, 1)$ \\
+    tanh & $\frac{e^x - e^{-x}}{e^x + e^{-x}}$ & $1 - \tanh(x)^2$ & $( - 1, 1)$ \\
+    ReLU & $\max(0, x)$ & $[x \geq 0]$ & $[0, \infty)$ \\
+\end{tabular}
+Finite range: stable training, mapping to prob. space.
+Sigmoid, tanh saturate (value with large mod have small gradient) $ \Rightarrow $ vanishing gradient,
+Tanh is linear around 0 (easy learn),
+ReLU can blow up activation; piecewise linear $ \Rightarrow $ faster convergence.
+
+\subsection{GD algos}
+
+\textbf{SGD}: use 1 sample.
+For sum structured loss is unbiased.
+High variance, efficient, jumps a lot $ \Rightarrow $ may get out of local min.,
+may overshoot.
+\textbf{Mini-batch}: use $m < n$ samples.
+More stable, parallelized.
+\textbf{Polyak's momentum}: velocity $\vv \coloneqq \alpha \vv - \epsilon \nabla_\theta L(\theta), \theta \coloneqq \theta + \vv$.
+Move faster when high curv., consistent or noisy grad.
+\textbf{Nesterov's momentum}: $\vv \coloneqq \alpha \vv - \epsilon \nabla_\theta L(\theta + \alpha \vv)$.
+Gets grad. at future point.
+\textbf{AdaGrad}: $\vr \coloneqq \vr + \nabla \odot \nabla$, $\Delta \theta = - \epsilon / (\delta + \sqrt{\vr})
+\odot \nabla$.
+Grads decrease fast for variables with high historical gradients,
+slow for low. But can decrease LR too early/fast.
+\textbf{RMSProp}: $\vr \coloneqq \rho \vr + (1 - \rho) \nabla \odot \nabla$,
+use weighted moving average $ \Rightarrow $ drop history from distant past,
+works better for nonconvex.
+\textbf{Adam}: collect 1st and 2nd moments:
+$\vm \coloneqq \beta_1 \vm + (1 - \beta_1) \nabla, \vv \coloneqq \beta_2 \vv + (1 - \beta_2) \nabla \odot \nabla$,
+unbias:
+$\hat{\vm} = \vm / (1 - \beta_1^t), \hat{\vv} = \vv / (1 - \beta_2^t)$,
+$\Delta \theta =- \frac{\eta}{\sqrt{\hat{\vv}} + \epsilon}\hat{\vm}$.
+
+
 \section{CNN} $T$ is linear if $T(\alpha \vu + \beta \vv) = \alpha T(\vu) + \beta T(\vv)$,
 invariant to $f$ if $T(f(\vu)) = T(\vu)$,
 equivariant to $f$ if $T(f(\vu)) = f(T(\vu))$.
@@ -298,9 +355,9 @@ We want constant error flow, not multiplied by $W^t$.
         \vh_t & = \vo \odot \tanh(\vc_t)
     \end{align*}
 \end{minipage}%
-\begin{minipage}{0.4\linewidth}
-    \includesvg[width=\textwidth]{figures/LSTM.svg}
-\end{minipage}
+%\begin{minipage}{0.4\linewidth}
+    %\includesvg[width=\textwidth]{figures/LSTM.svg}
+%\end{minipage}
 
 
 \section{Generative modelling}
@@ -549,11 +606,11 @@ $p_x(x) = p_z(f^{-1}(x)) \prod_k \abs{\det \pdv{f_k^{-1}(x)}{x}}$.
 
 Sample $z \sim p_z$ and get $x = f(z)$.
 
-\includesvg[width=\linewidth]{figures/flow.svg}
+%\includesvg[width=\linewidth]{figures/flow.svg}
 
-\begin{wrapfigure}{R}{0.2\linewidth}
-    \includesvg[width=\linewidth]{figures/flow-block.svg}
-\end{wrapfigure}
+% \begin{wrapfigure}{R}{0.2\linewidth}
+    %\includesvg[width=\linewidth]{figures/flow-block.svg}
+% \end{wrapfigure}
 \textbullet\ Squeeze: reshape, increase chan.
 
 \textbullet\ ActNorm: batchnorm with init. s.t. output $\sim \mathcal{N}(0, \mI)$ for first minibatch.
@@ -640,6 +697,9 @@ $\vx_{t-1} = \frac{1}{\sqrt{\alpha_t}}(\vx_t - \frac{1 - \alpha_t}{\sqrt{1 - \ov
 $\sigma_t^2 = \beta_t$ in practice.
 $t$ can be continuious.
 
+$q(x_{t-1} | x_t, x_0) = \frac{x_t | x_{t-1}, x_0}{q(x_t | x_0)} \propto q(x_t | x_{t-1}, x_0)q(x_{t-1} | x_0)$
+
+
 \subsection{Conditional generation}
 
 Add input $y$ to the model.
@@ -672,86 +732,6 @@ Predict in latent space, decode with a decoder.
 \textbf{DreamBooth}: Fine-tune diffusion model on a few images of a subject, then use it to generate images of that subject.
 \textbf{Zero-1-to-3}: 3d reconstruction from single image. Condition on rotation and translation using CLIP embeddings.
 \textbf{SiTH}: Single Image to High-Res. Condition diffusion on 3D model.
-\section{Neural Implicit Representations}
-
-Voxels/volum. primitives are inefficient ($n^3$ compl.).
-Meshes have limited granularity and have self-intersections.
-\textbf{Implicit representation}: $S = \{x \mid f(x) = 0\}$.
-Can be invertibly transformed without accuracy loss.
-Usually represented as signed distance function values on a grid, but this is again $n^3$.
-By UAT, approx. $f$ with NN.
-\textbf{Occupancy networks}: predict probability that point is inside the shape.
-\textbf{DeepSDF}: predict SDF.
-Both conditioned on input (2D image, class, etc.).
-Continuious, any topology/resolution, memory-efficient.
-NFs can model other properties (color, force, etc.).
-
-\subsection{Learning 3D Implicit Shapes}
-
-\textbf{Inference}: to get a mesh, sample points, predict occupancy/SDF, use marching cubes.
-
-\subsubsection{From watertight meshes}
-Sample points in space, compute GT occupancy/SDF, CE loss.
-
-\subsubsection{From point clouds} Only have samples on the surface.
-Weak supervision: loss = $|f_\theta(x_i)|^2 + \lambda \E_x(\norm{\nabla_x f_\theta(x)} - 1)^2$,
-edge points should have $\norm{\nabla f} \approx 1$ by def. of SDF, $f \approx 0$.
-
-\subsubsection{From images} Need differentiable rendering 3D $\to$ 2D.
-\textbf{Differentiable Volumetric Rendering}: for a point conditioned on encoded image,
-predict occupancy $f(x)$ and RGB color $c(x)$.
-\textbf{Forward}: for a pixel, raymarch and root find $\hat{p} : f(\hat{p}) = 0$ with secant. Set pixel color to $c(\hat{p})$.
-\textbf{Backward}: see proofs.
-
-\subsection{Neural Radiance Fields (NeRF)} \phantom{a}
-
-$(x, y, z, \theta, \phi) \xrightarrow{\textsc{nn}} (r, g, b, \sigma)$.
-Density is predicted before adding view direction $\theta, \phi$,
-then one layer for color.
-\textbf{Forward}: shoot ray, sample points along it and blend:
-$\alpha \coloneqq 1 - \exp( - \sigma_i \delta_i), \delta_i \coloneqq t_{i+1} - t_i,
-T_i \coloneqq \prod_{j = 1}^{i-1}(1 - \alpha_j)$,
-color is $c = \sum_i T_i \alpha_i c_i$.
-Optimized on many views of the scene.
-Can handle transparency/thin structure,
-but worse geometry.
-Needs many (50+) views for training, slow rendering for high res,
-only models static scenes.
-
-\subsubsection{Positional Encoding for High Frequency Details}
-Replace $x, y, z$ with pos. enc. or rand. Fourier feats.
-Adds high frequency feats.
-
-\subsubsection{NeRF from sparse views} Regularize geometry and color.
-
-\subsubsection{Fast NeRF render. and train.}
-Replace deep MLPs with learn. feature hash table + small MLP.
-For $x$ interp. features between corners.
-
-\subsection{3D Gaussian Splatting}
-
-\textbf{Alternative parametr.}:
-Find a cover of object with primitives, predict inside.
-Or sphere clouds. Both ineff. for thin structures.
-Ellipsoids are better.
-
-Initialize point cloud randomly or with an approx. reconstruction.
-Each point has a 3D Gaussian.
-Use camera params. to project (``splat'') Gaussians to 2D
-and differentiably render them.
-Adaptive density control moves/clones/merges points.
-
-Rasterization: for each pixel sort Gaussians by depth, opacity
-$\alpha = o \cdot \exp( - 0.5(x - \mu')\tran \Sigma'{}^{-1}(x - \mu'))$,
-rest same as NeRF.
-
-Each Gaussian primitive has a center $\mu \in \R^3$, a covariance $\Sigma \in \R^{3\times 3}$, and a color $c \in \R^3$ and an opaciti $o \in \R$.
-
-To model view-dependent color, the color can be replaced with spherical harmonics, i.e. $c \in \R^9$
-
-To keep covariance semi-definite: $\Sigma = RSS^\top R^\top$, where $S \in \R^{3\times 3}$ is a diagonal scaling matrix and $R \in \R^{3\times 3}$ is a rotation matrix.
-
-\includesvg[width=\linewidth]{figures/splatting.svg}
 
 \section{Parametric body models}
 
@@ -789,10 +769,21 @@ Linear assumption produces artifacts.
 $\vt_i' = \sum_k w_{ki} \mG_k(\bm\theta, \mJ(\bm\beta))(\vt_i + \vs_i(\bm\beta) + \vp_i(\bm\theta))$.
 Adds shape correctives $\vs(\bm\beta) = \mS\bm\beta$,
 pose cor. $\vp(\bm\theta) = \mP\bm\theta$,
-$\mJ$ dep. on shape $\bm\beta$.
+$\mJ$ learned from shape $\bm\beta$ (least squares).
 
 Predicting human pose is just predicting $\bm\beta, \bm\theta$ and camera parameters.
 
+$\mathcal{W}$ are \textbf{skinning weights}, how vertices are influenced by joints.
+
+$\mathcal{B}_S(\boldsymbol{\beta}, \mathcal{S}) = \sum_{n=1}^{|\boldsymbol{\beta}|}{\beta_n\mathbf{S}_n}$ is shape blend shape (identity of person).
+
+$\mathcal{B}_P(\theta, P) = \sum_{n=1}^{9k}(R_n(\boldsymbol{\theta}) - R_n(\boldsymbol{\theta}^*))\mathbf{P}_n$ is pose blend shape aka pose correctives, $\mathbf{P}_n\in\mathbb{R}^{3N}$ blend shapes, learned from data, and $R(\theta): \mathbb{R}^{|\theta|}\rightarrow \mathbb{R}^{9K}$.
+
+\textbf{SMPL Family}: MANO / SMPL+H, FLAME, SMPL-X, STAR.
+\textbf{Human Mesh Recovery (HMR)}: predict $\bm\beta, \bm\theta$ from image. Projection + discriminator.
+\textbf{SMPLify}: gradient = projection error + pose plausible in real life.
+\textbf{LGD}: learn gradient descent, estimate gradient with NN, with actual gradients, current state and target 2D pose as input.
+\textbf{EM-POSE}: use LGD on EM measurements.
 \subsubsection{Optimization-based fitting} Predict 2D joint locations,
 fit SMPL to them by argmin with prior regularization.
 Argmin is hard to find, learn $F$: $\Delta \theta = F(\pdv{L_{reproj}}{\theta}, \theta^t, x)$.
@@ -802,64 +793,106 @@ Issues: self-occlusion, no depth info, non-rigid deformation (clothes).
 Scan for first frame, then track with SMPL.
 
 \subsubsection{Animatable Neural Implicit Surfaces}
+Model base shape and $w$ with 2 NISs. 
 
-Model base shape and $w$ with 2 NISs.
+\section{Egocentric Vision}
+FPV: + Dynamic uncurated content; + long-form video stream; + driven by goals, interactions and attention; - occlusions; - motion blur
+TPV: + static; + controlled field of view; - curated moment in time; - disembodied. $\sep$ 1945: Bush's Memex, data storage. 2009: SixthSense, finger gestures. Gaze Tracker. 32 kitchens: object, action annotations, 55h.
+Ego4D: 855 subjects, 3k h. 
+hand and hand-object interactions: bounding boxes for hands and objects. DexYCB: videos grabbing things. HaMeR: ViT $\rightarrow$ Transformer head $\rightarrow$ MANO. 
+$\sep$ action recognition and anticipation: past actions + task-relevant objects = action context. TransFusion: get context and predict location and next action and time to contact. PALM: prompt caption + action in LLM. 
+$\sep$ gaze understanding and prediction: infer intention from gaze. PCI matches gaze changes. 
+$\sep$  3D Scene Understanding: mask out active objects. LMK. EgoGaussian.
+$\sep$ robotic applications: MAPLE.
 
-\section{ML}
 
-Perceptron converges in finite time iff data is linearly separable.
-\textbf{MAP} $\theta^* \in \argmax p(\theta \mid X, y)$.
-\textbf{MLE} $\theta \in \argmax p(y \mid X, \theta)$ consistent, efficient.
-\textbf{Binary cross-entropy} $L(\theta) = - y_i \log(\hat{y}_i) - (1 - y_i) \log(1 - \hat{y}_i)$.
-Cross-entropy $H(p_d, p_m) = H(p_d) + \kl{p_d}{p_m}$.
-For any continuous $f$ $\exists \mathrm{NN}\ g(x), |g(x) - f(x)| < \varepsilon$.
-1 hidden layer is enough, activation function needs to be nonlinear.
+\section{Neural Implicit Representations}
 
-MLP backward inputs: $\delta^{(l)} = \delta^{(l + 1)} \cdot \pdv{\vz^{(l + 1)}}{\vz^{(l)}}$,
-backward weights: $\left[\pdv{\vz^{(l)}}{\vw_{ij}^{(l)}}\right]_k = f'(\va)_k \cdot z_j^{(l)} \cdot [k = i],
-\pdv{L}{\vz^{(l)}}{\vz^{(l)}} = \delta^{(l)} \pdv{\vz^{(l)}}{\vw_{i,j}^{(l)}}$,
-backward bias: $\pdv{L}{\vb_i^{(l)}} =$ same, but no $\vz$.
+Voxels/volum. primitives are inefficient ($n^3$ compl.).
+Meshes have limited granularity and have self-intersections.
+\textbf{Implicit representation}: $S = \{x \mid f(x) = 0\}$.
+Can be invertibly transformed without accuracy loss.
+Usually represented as signed distance function values on a grid, but this is again $n^3$.
+By UAT, approx. $f$ with NN.
+\textbf{Occupancy networks}: predict probability that point is inside the shape.
+\textbf{DeepSDF}: predict SDF.
+Both conditioned on input (2D image, class, etc.).
+NFs can model other properties (color, force, etc.).
+$\sep$ Pro/cons: + easily combined + norms are continuous and correct + easily derived from point clouds + exact form of many geometric shapes + less storage; - intersections expensive to compute - cannot guarantee exact intersect - difficult to define a UV space.
 
-\subsection{Activation functions} \phantom{a}
+\subsection{Learning 3D Implicit Shapes}
 
-% \renewcommand{\arraystretch}{0}
-\begin{tabular}[]{@{}c@{}ccc@{}}
-    \toprule
-    name & $f(x)$ & $f'(x)$ & $f(X)$ \\
-    \midrule
-    sigmoid & $\frac{1}{1 + e^{-x}}$ & $\sigma(x)(1 - \sigma(x))$ & $(0, 1)$ \\
-    tanh & $\frac{e^x - e^{-x}}{e^x + e^{-x}}$ & $1 - \tanh(x)^2$ & $( - 1, 1)$ \\
-    ReLU & $\max(0, x)$ & $[x \geq 0]$ & $[0, \infty)$ \\
-\end{tabular}
-Finite range: stable training, mapping to prob. space.
-Sigmoid, tanh saturate (value with large mod have small gradient) $ \Rightarrow $ vanishing gradient,
-Tanh is linear around 0 (easy learn),
-ReLU can blow up activation; piecewise linear $ \Rightarrow $ faster convergence.
+\textbf{Inference}: to get a mesh, sample points, predict occupancy/SDF, use marching cubes.
 
-\subsection{GD algos}
+\subsubsection{From watertight meshes}
+Sample points in space, compute GT occupancy/SDF, CE loss.
 
-\textbf{SGD}: use 1 sample.
-For sum structured loss is unbiased.
-High variance, efficient, jumps a lot $ \Rightarrow $ may get out of local min.,
-may overshoot.
-\textbf{Mini-batch}: use $m < n$ samples.
-More stable, parallelized.
-\textbf{Polyak's momentum}: velocity $\vv \coloneqq \alpha \vv - \epsilon \nabla_\theta L(\theta), \theta \coloneqq \theta + \vv$.
-Move faster when high curv., consistent or noisy grad.
-\textbf{Nesterov's momentum}: $\vv \coloneqq \alpha \vv - \epsilon \nabla_\theta L(\theta + \alpha \vv)$.
-Gets grad. at future point.
-\textbf{AdaGrad}: $\vr \coloneqq \vr + \nabla \odot \nabla$, $\Delta \theta = - \epsilon / (\delta + \sqrt{\vr})
-\odot \nabla$.
-Grads decrease fast for variables with high historical gradients,
-slow for low. But can decrease LR too early/fast.
-\textbf{RMSProp}: $\vr \coloneqq \rho \vr + (1 - \rho) \nabla \odot \nabla$,
-use weighted moving average $ \Rightarrow $ drop history from distant past,
-works better for nonconvex.
-\textbf{Adam}: collect 1st and 2nd moments:
-$\vm \coloneqq \beta_1 \vm + (1 - \beta_1) \nabla, \vv \coloneqq \beta_2 \vv + (1 - \beta_2) \nabla \odot \nabla$,
-unbias:
-$\hat{\vm} = \vm / (1 - \beta_1^t), \hat{\vv} = \vv / (1 - \beta_2^t)$,
-$\Delta \theta =- \frac{\eta}{\sqrt{\hat{\vv}} + \epsilon}\hat{\vm}$.
+\subsubsection{From point clouds} Only have samples on the surface.
+Weak supervision: loss = $|f_\theta(x_i)|^2 + \lambda \E_x(\norm{\nabla_x f_\theta(x)} - 1)^2$,
+edge points should have $\norm{\nabla f} \approx 1$ by def. of SDF (Eikonal Equation), $f \approx 0$.
+
+\subsubsection{From images} Need differentiable rendering 3D $\to$ 2D.
+\textbf{Differentiable Volumetric Rendering}: for a point conditioned on encoded image,
+predict occupancy $f(x)$ and RGB color $c(x)$.
+\textbf{Forward}: for a pixel, raymarch and root find $\hat{p} : f(\hat{p}) = 0$ with secant. Set pixel color to $c(\hat{p})$.
+\textbf{Backward}: see proofs.
+
+\subsection{Neural Radiance Fields (NeRF)} \phantom{a}
+
+$(x, y, z, \theta, \phi) \xrightarrow{\textsc{nn}} (r, g, b, \sigma)$.
+Density $\sigma$ is predicted before adding view direction $\theta, \phi$ to limit effects of viewing angle on geometry,
+then one layer for color.
+\textbf{Forward}: shoot ray, sample points along it and blend:
+$\alpha_i \coloneqq 1 - \exp( - \sigma_i \delta_i), \delta_i \coloneqq t_{i+1} - t_i,
+T_i \coloneqq \prod_{j = 1}^{i-1}(1 - \alpha_j)$,
+color is $c = \sum_i T_i \alpha_i c_i$.
+Optimized on many views of the scene.
+Can handle transparency/thin structure,
+but worse geometry.
+Needs many (50+) views for training, slow rendering for high res,
+only models static scenes.
+
+\subsubsection{Positional Encoding for High Frequency Details}
+Replace $x, y, z$ with pos. enc. or rand. Fourier feats.
+Adds high frequency feats.
+
+\subsubsection{NeRF from sparse views} Regularize geometry and color.
+
+\subsubsection{Fast NeRF render. and train.}
+Replace deep MLPs with learn. feature hash table + small MLP.
+For $x$ interp. features between corners.
+
+\subsubsection{SNARF}
+Model implicit function in canonical space.
+
+\subsubsection{Vid2Avatar} Human in a sphere, background with NeRF, model body in canonical space.
+
+\subsection{3D Gaussian Splatting}
+
+\textbf{Alternative parametr.}:
+Find a cover of object with primitives, predict inside.
+Or sphere clouds. Both ineff. for thin structures.
+Ellipsoids are better.
+
+Initialize point cloud randomly or with an approx. reconstruction.
+Each point has a 3D Gaussian.
+Use camera params. to project (``splat'') Gaussians to 2D
+and differentiably render them.
+Adaptive density control moves/clones/merges points.
+
+Rasterization: for each pixel sort Gaussians by depth, opacity
+$\alpha = o \cdot \exp( - 0.5(x - \mu')\tran \Sigma'{}^{-1}(x - \mu'))$,
+rest same as NeRF.
+
+Each Gaussian primitive has a center $\mu \in \R^3$, a covariance $\Sigma \in \R^{3\times 3}$, and a color $c \in \R^3$ and an opaciti $o \in \R$.
+
+To model view-dependent color, the color can be replaced with spherical harmonics, i.e. $c \in \R^9$
+
+To keep covariance semi-definite: $\Sigma = RSS^\top R^\top$, where $S \in \R^{3\times 3}$ is a diagonal scaling matrix and $R \in \R^{3\times 3}$ is a rotation matrix.
+
+%\includesvg[width=\linewidth]{figures/splatting.svg}
+
+
 
 
 
